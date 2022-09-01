@@ -8,9 +8,8 @@ import (
 
 func main() {
 
-
 	// change to your rpc provider
-	var rpcProvider = "https://rpc.flashbots.net"
+	var rpcProvider = "https://polygon-rpc.com"
 	web3, err := web3.NewWeb3(rpcProvider)
 	if err != nil {
 		panic(err)
