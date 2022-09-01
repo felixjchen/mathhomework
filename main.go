@@ -3,10 +3,14 @@ package main
 import (
 	"fmt"
 
+	"arbitrage_go/mypackage"
+
 	"github.com/chenzhijie/go-web3"
 )
 
 func main() {
+
+	mypackage.PrintHello()
 
 	// change to your rpc provider
 	var rpcProvider = "https://polygon-rpc.com"

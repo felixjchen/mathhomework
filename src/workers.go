@@ -1,4 +1,4 @@
-package main
+package workers
 
 import (
 	"fmt"
@@ -25,12 +25,12 @@ func main() {
 	jobs := make(chan job)
 
 	// start workers
-    	wg := &sync.WaitGroup{}
-    	wg.Add(maxWorkers)
+	wg := &sync.WaitGroup{}
+	wg.Add(maxWorkers)
 	for i := 1; i <= maxWorkers; i++ {
 		go func(i int) {
-            		defer wg.Done()
-			
+			defer wg.Done()
+
 			for j := range jobs {
 				doWork(i, j)
 			}
