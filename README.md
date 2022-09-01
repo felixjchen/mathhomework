@@ -1,5 +1,7 @@
 # arbitrage_go
 
+https://docs.polygon.technology/docs/develop/network-details/network/
+
 https://gist.github.com/harlow/dbcd639cf8d396a2ab73#file-worker_refactored-go
 
 https://defiprime.com/polygon#decentralized-exchanges-on-polygon
