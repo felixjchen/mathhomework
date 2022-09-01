@@ -40,6 +40,15 @@ contract FlashBotsUniswapQuery {
         return result;
     }
 
+    function getAllPairsLength(UniswapV2Factory _uniswapFactory)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 _allPairsLength = _uniswapFactory.allPairsLength();
+        return _allPairsLength;
+    }
+
     function getPairsByIndexRange(
         UniswapV2Factory _uniswapFactory,
         uint256 _start,

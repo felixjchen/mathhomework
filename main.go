@@ -7,6 +7,7 @@ import (
 	"arbitrage_go/constants"
 
 	"github.com/chenzhijie/go-web3"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
@@ -24,12 +25,38 @@ func main() {
 	fmt.Println("Current block number: ", blockNumber)
 
 	contract, err := web3.Eth.NewContract(constants.UNISWAP_FLASH_QUERY_ABI, constants.FLASH_QUERY_ADDRESS)
-
-	fmt.Println("Contract address: ", contract.Address())
-	res, err := contract.Call("getPairsByIndexRange", constants.QUICKSWAP_FACTORY_ADDRESS, big.NewInt(0), big.NewInt(4))
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Contract address: ", contract.Address())
 
-	fmt.Printf("res %v\n", res)
+	type Pairs [][3]common.Address
+
+	// Collect all pairs
+	allPairs := Pairs{}
+	var i int64 = 0
+	var step int64 = 200
+	for {
+		slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(constants.QUICKSWAP_FACTORY_ADDRESS), big.NewInt(i), big.NewInt(i+step))
+
+		pairs, ok := slice.([][3]common.Address)
+		if !ok {
+			fmt.Println("can not convert")
+		}
+		allPairs = append(allPairs, pairs...)
+		i += step
+		if len(pairs) == 0 {
+			break
+		}
+	}
+
+	// Filter to WETH pairs
+	WETH := common.HexToAddress(constants.WETH_ADDRESS)
+	wethPairs := Pairs{}
+	for _, s := range allPairs {
+		if s[0] == WETH || s[1] == WETH {
+			wethPairs = append(wethPairs, s)
+		}
+	}
+	fmt.Printf("WETH_PAIRS %v\n", wethPairs)
 }
