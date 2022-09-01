@@ -1,6 +1,6 @@
 package constants
 
-const UniswapFlashQueryABI = `[{
+const UNISWAP_FLASH_QUERY_ABI = `[{
   "inputs": [{
     "internalType": "contract UniswapV2Factory",
     "name": "_uniswapFactory",
