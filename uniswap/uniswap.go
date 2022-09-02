@@ -110,3 +110,12 @@ func UpdateReservesForPools(pools []Pool) []Reserve {
 
 	return reserves
 }
+
+func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *big.Int {
+	amountInWithFee := big.NewInt(0).Mul(amountIn, big.NewInt(997))
+	numerator := big.NewInt(0).Mul(amountInWithFee, reserveOut)
+	denominator := big.NewInt(0).Mul(reserveIn, big.NewInt(1000))
+	denominator.Add(denominator, amountInWithFee)
+
+	return numerator.Div(numerator, denominator)
+}
