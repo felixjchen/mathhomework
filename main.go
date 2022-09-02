@@ -21,6 +21,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	web3.Eth.SetChainId(80001)
+
+	err = web3.Eth.SetAccount("ea0d86ce7b7c394ca92cafadb8c8b50e82820d79de32f993a78b16c0ab5b73ad")
+	if err != nil {
+		panic(err)
+	}
 
 	allPools := uniswap.GetAllPools()
 
@@ -59,7 +65,6 @@ func main() {
 	for i, pool := range wethPools {
 		poolToReserves[pool] = reserves[i]
 	}
-	// fmt.Println(poolToReserves)
 
 	// profitablePathes := [][2]uniswap.Pool{}
 	// Simulate path
@@ -85,11 +90,68 @@ func main() {
 
 		wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
 
-		// fmt.Println(wethOut)
-
 		if big.NewInt(0).Sub(wethOut, wethIn).Sign() == 1 {
 			fmt.Println("PROFIT", path, big.NewInt(0).Sub(wethOut, wethIn))
-		}
+			// profitablePathes = append(profitablePathes, path)
 
+			// INEFFICIENT
+			pool, err := web3.Eth.NewContract(config.PAIR_ABI, path[0].Address.String())
+			if err != nil {
+				panic(err)
+			}
+			pool2, err := web3.Eth.NewContract(config.PAIR_ABI, path[1].Address.String())
+			if err != nil {
+				panic(err)
+			}
+			// Build first txn
+			amount0Out := big.NewInt(0)
+			amount1Out := intermediateAmount
+			if path[0].Token1 == weth {
+				amount0Out = intermediateAmount
+				amount1Out = big.NewInt(0)
+			}
+			firstTarget := common.Address(path[0].Address)
+			firstData, err := pool.EncodeABI("swap", amount0Out, amount1Out, path[1].Address, []byte{})
+			if err != nil {
+				panic(err)
+			}
+
+			// build second txn
+			amount0Out = wethOut
+			amount1Out = big.NewInt(0)
+			if path[1].Token1 == weth {
+				amount0Out = big.NewInt(0)
+				amount1Out = wethOut
+			}
+			secondTarget := common.Address(path[1].Address)
+			secondData, err := pool2.EncodeABI("swap", amount0Out, amount1Out, common.HexToAddress(config.BUNDLE_EXECUTOR_ADDRESS), []byte{})
+			if err != nil {
+				panic(err)
+			}
+
+			// run bundle
+			executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.BUNDLE_EXECUTOR_ADDRESS)
+			if err != nil {
+				panic(err)
+			}
+
+			data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
+			if err != nil {
+				panic(err)
+			}
+
+			tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
+				executor.Address(),
+				big.NewInt(0),
+				101000,
+				web3.Utils.ToGWei(25),
+				web3.Utils.ToGWei(325),
+				data,
+			)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("tx hash %v\n", tx.TxHash)
+		}
 	}
 }
