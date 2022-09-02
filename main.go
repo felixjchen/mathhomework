@@ -99,10 +99,6 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			pool2, err := web3.Eth.NewContract(config.PAIR_ABI, path[1].Address.String())
-			if err != nil {
-				panic(err)
-			}
 			// Build first txn
 			amount0Out := big.NewInt(0)
 			amount1Out := intermediateAmount
@@ -115,7 +111,14 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
+			// fmt.Println(hex.EncodeToString(firstData))
+			// fmt.Println(firstTarget)
+			// fmt.Println(amount0Out, amount1Out, common.HexToAddress(config.BUNDLE_EXECUTOR_ADDRESS), []byte{})
 
+			pool2, err := web3.Eth.NewContract(config.PAIR_ABI, path[1].Address.String())
+			if err != nil {
+				panic(err)
+			}
 			// build second txn
 			amount0Out = wethOut
 			amount1Out = big.NewInt(0)
@@ -135,6 +138,8 @@ func main() {
 				panic(err)
 			}
 
+			// fmt.Println(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
+
 			data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
 			if err != nil {
 				panic(err)
@@ -143,7 +148,7 @@ func main() {
 			tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
 				executor.Address(),
 				big.NewInt(0),
-				101000,
+				1010000,
 				web3.Utils.ToGWei(25),
 				web3.Utils.ToGWei(325),
 				data,

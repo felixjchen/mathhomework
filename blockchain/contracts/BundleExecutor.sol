@@ -71,8 +71,12 @@ contract FlashBotsMultiCall {
 
     receive() external payable {}
 
-    function sweepERC20(address _to, uint256 _amount) external onlyOwner {
-        WETH.transfer(_to, _amount);
+    function sweepERC20(
+        IERC20 token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        token.transfer(_to, _amount);
     }
 
     function uniswapWeth(
@@ -83,7 +87,8 @@ contract FlashBotsMultiCall {
     ) external payable onlyExecutor {
         require(_targets.length == _payloads.length, "bad lengths");
         uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
-        WETH.transfer(_targets[0], _wethAmountToFirstMarket);
+        bool success = WETH.transfer(_targets[0], _wethAmountToFirstMarket);
+        require(success, "first weth fail");
         for (uint256 i = 0; i < _targets.length; i++) {
             (bool _success, bytes memory _response) = _targets[i].call(
                 _payloads[i]
@@ -94,16 +99,20 @@ contract FlashBotsMultiCall {
 
         uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
         require(
-            _wethBalanceAfter > _wethBalanceBefore + _ethAmountToCoinbase,
-            "coinbase fail"
+            _wethBalanceAfter > _wethBalanceBefore,
+            "reverted non profitable"
         );
-        if (_ethAmountToCoinbase == 0) return;
+        // require(
+        //     _wethBalanceAfter > _wethBalanceBefore + _ethAmountToCoinbase,
+        //     "coinbase fail"
+        // );
+        // if (_ethAmountToCoinbase == 0) return;
 
-        uint256 _ethBalance = address(this).balance;
-        if (_ethBalance < _ethAmountToCoinbase) {
-            WETH.withdraw(_ethAmountToCoinbase - _ethBalance);
-        }
-        block.coinbase.transfer(_ethAmountToCoinbase);
+        // uint256 _ethBalance = address(this).balance;
+        // if (_ethBalance < _ethAmountToCoinbase) {
+        //     WETH.withdraw(_ethAmountToCoinbase - _ethBalance);
+        // }
+        // block.coinbase.transfer(_ethAmountToCoinbase);
     }
 
     function call(
