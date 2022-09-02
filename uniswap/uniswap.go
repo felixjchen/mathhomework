@@ -30,23 +30,27 @@ func GetAllPools() []Pool {
 	if err != nil {
 		panic(err)
 	}
-	var i int64 = 0
-	for {
-		slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(config.QUICKSWAP_FACTORY_ADDRESS), big.NewInt(i), big.NewInt(i+STEP_SIZE))
-		// Just casted from interface{} to [][3] Address
-		castedSlice, ok := slice.([][3]common.Address)
-		if !ok {
-			fmt.Println("can not convert")
-		}
-		// Create structs TODO MAP this
-		poolsToAdd := []Pool{}
-		for _, arr := range castedSlice {
-			poolsToAdd = append(poolsToAdd, Pool{Token0: arr[0], Token1: arr[1], Address: arr[2]})
-		}
-		allPools = append(allPools, poolsToAdd...)
-		i += STEP_SIZE
-		if len(poolsToAdd) == 0 {
-			break
+
+	// Get all pools for all dexes
+	for _, uniswappy_address := range config.UNISWAPPY_FACTORY_ADDRESSES {
+		var i int64 = 0
+		for {
+			slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(uniswappy_address), big.NewInt(i), big.NewInt(i+STEP_SIZE))
+			// Just casted from interface{} to [][3] Address
+			castedSlice, ok := slice.([][3]common.Address)
+			if !ok {
+				fmt.Println("can not convert pool")
+			}
+			// Create structs TODO MAP this
+			poolsToAdd := []Pool{}
+			for _, arr := range castedSlice {
+				poolsToAdd = append(poolsToAdd, Pool{Token0: arr[0], Token1: arr[1], Address: arr[2]})
+			}
+			allPools = append(allPools, poolsToAdd...)
+			i += STEP_SIZE
+			if len(poolsToAdd) == 0 {
+				break
+			}
 		}
 	}
 
@@ -64,16 +68,16 @@ func FilterPools(candidate func(Pool) bool, pools []Pool) []Pool {
 }
 
 type Reserve struct {
-	Reserve0           int
-	Reserve1           int
-	BlockTimestampLast int
+	Reserve0           *big.Int
+	Reserve1           *big.Int
+	BlockTimestampLast *big.Int
 }
 
-// func TupleToReserve() Reserve {
-
+// func TupleToReserve(tuple [3]*big.Int) Reserve {
+// 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
 // }
 
-func UpdateReservesForPools(pools []Pool) {
+func UpdateReservesForPools(pools []Pool) []Reserve {
 	MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
 	web3, err := web3.NewWeb3(MUMBAI_URL)
 	if err != nil {
@@ -89,15 +93,20 @@ func UpdateReservesForPools(pools []Pool) {
 	for _, pool := range pools {
 		pairs = append(pairs, pool.Address)
 	}
-	reserves, err := contract.Call("getReservesByPairs", pairs)
+	res, err := contract.Call("getReservesByPairs", pairs)
 	if err != nil {
 		panic(err)
 	}
-	castedReserves, ok := reserves.([][3]*big.Int)
+	reserveTuples, ok := res.([][3]*big.Int)
 	if !ok {
 		fmt.Println("can not convert")
 	}
 
-	fmt.Println(castedReserves)
+	// Create structs TODO MAP this
+	reserves := []Reserve{}
+	for _, arr := range reserveTuples {
+		reserves = append(reserves, Reserve{Reserve0: arr[0], Reserve1: arr[1], BlockTimestampLast: arr[2]})
+	}
 
+	return reserves
 }

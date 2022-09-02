@@ -10,4 +10,9 @@ https://medium.com/rungo/everything-you-need-to-know-about-packages-in-go-b8bac6
 
 https://github.com/QuickSwap/quickswap-core/tree/master/contracts
 
-https://itnext.io/generic-map-filter-and-reduce-in-go-3845781a591c
+
+## DEXES
+
+https://defiprime.com/polygon#decentralized-exchanges-on-polygon
+
+https://cryptoticker.io/en/top-5-dex-polygon/
