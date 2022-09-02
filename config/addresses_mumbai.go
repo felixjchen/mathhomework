@@ -1,4 +1,4 @@
-package constants
+package config
 
 const WETH_ADDRESS = "0xa6fa4fb5f76172d178d61b04b0ecd319c5d1c0aa" // Mumbai
 // const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // Polygon
