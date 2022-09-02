@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const STEP_SIZE int64 = 200
+const STEP_SIZE int64 = 400
 
 type Pool struct {
 	Token0  common.Address
@@ -38,7 +38,7 @@ func GetAllPools() []Pool {
 		if !ok {
 			fmt.Println("can not convert")
 		}
-		// Create structs
+		// Create structs TODO MAP this
 		poolsToAdd := []Pool{}
 		for _, arr := range castedSlice {
 			poolsToAdd = append(poolsToAdd, Pool{Token0: arr[0], Token1: arr[1], Address: arr[2]})
@@ -52,6 +52,26 @@ func GetAllPools() []Pool {
 
 	return allPools
 }
+
+func FilterPools(candidate func(Pool) bool, pools []Pool) []Pool {
+	filteredPools := []Pool{}
+	for _, pool := range pools {
+		if candidate(pool) {
+			filteredPools = append(filteredPools, pool)
+		}
+	}
+	return filteredPools
+}
+
+type Reserve struct {
+	Reserve0           int
+	Reserve1           int
+	BlockTimestampLast int
+}
+
+// func TupleToReserve() Reserve {
+
+// }
 
 func UpdateReservesForPools(pools []Pool) {
 	MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
@@ -73,16 +93,11 @@ func UpdateReservesForPools(pools []Pool) {
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(reserves)
-}
-
-func FilterPools(candidate func(Pool) bool, pools []Pool) []Pool {
-	filteredPools := []Pool{}
-	for _, pool := range pools {
-		if candidate(pool) {
-			filteredPools = append(filteredPools, pool)
-		}
+	castedReserves, ok := reserves.([][3]*big.Int)
+	if !ok {
+		fmt.Println("can not convert")
 	}
-	return filteredPools
+
+	fmt.Println(castedReserves)
+
 }

@@ -16,4 +16,6 @@ func main() {
 	allPools := uniswap.GetAllPools()
 	wethPools := uniswap.FilterPools(wethFilter, allPools)
 	fmt.Println(wethPools)
+
+	uniswap.UpdateReservesForPools(wethPools)
 }
