@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const STEP_SIZE int64 = 400
+const STEP_SIZE int64 = 1000
 
 type Pool struct {
 	Token0  common.Address
@@ -20,8 +20,10 @@ type Pool struct {
 func GetAllPools() []Pool {
 	allPools := []Pool{}
 
-	MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-	web3, err := web3.NewWeb3(MUMBAI_URL)
+	// FIX THIS CONFIG TODO
+	// MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+	POLYGON_URL := "https://polygon-rpc.com"
+	web3, err := web3.NewWeb3(POLYGON_URL)
 	if err != nil {
 		panic(err)
 	}
@@ -78,8 +80,12 @@ type Reserve struct {
 // }
 
 func UpdateReservesForPools(pools []Pool) []Reserve {
-	MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-	web3, err := web3.NewWeb3(MUMBAI_URL)
+
+	// FIX THIS CONFIG TODO
+	// MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+	POLYGON_URL := "https://polygon-rpc.com"
+	web3, err := web3.NewWeb3(POLYGON_URL)
+
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +105,7 @@ func UpdateReservesForPools(pools []Pool) []Reserve {
 	}
 	reserveTuples, ok := res.([][3]*big.Int)
 	if !ok {
-		fmt.Println("can not convert")
+		fmt.Println("can not convert reserve")
 	}
 
 	// Create structs TODO MAP this
@@ -116,6 +122,10 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 	numerator := big.NewInt(0).Mul(amountInWithFee, reserveOut)
 	denominator := big.NewInt(0).Mul(reserveIn, big.NewInt(1000))
 	denominator.Add(denominator, amountInWithFee)
+
+	if denominator == big.NewInt(0) {
+		return big.NewInt(0)
+	}
 
 	return numerator.Div(numerator, denominator)
 }

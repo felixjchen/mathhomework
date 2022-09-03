@@ -27,3 +27,17 @@ https://cryptoticker.io/en/top-5-dex-polygon/
 https://github.com/Uniswap/v2-periphery/blob/master/contracts/libraries/UniswapV2Library.sol
 
 https://github.com/chenzhijie/go-web3/blob/master/examples/contract/erc20.go
+
+# TODO 
+
+better config
+
+volume optimisation
+
+more dexes
+
+logging
+
+loading bars
+
+unname functions

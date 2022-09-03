@@ -46,10 +46,10 @@ interface IWETH is IERC20 {
 // This contract simply calls multiple targets sequentially, ensuring WETH balance before and after
 
 contract FlashBotsMultiCall {
-    address public immutable owner;
-    address public immutable executor;
+    address private immutable owner;
+    address private immutable executor;
     IWETH private constant WETH =
-        IWETH(0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889);
+        IWETH(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
 
     modifier onlyExecutor() {
         require(msg.sender == executor, "Only executor");
