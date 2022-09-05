@@ -1,11 +1,11 @@
 package uniswap
 
 import (
+	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
 	"fmt"
 	"math/big"
 
-	"github.com/chenzhijie/go-web3"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -20,24 +20,18 @@ type Pool struct {
 func GetAllPools() []Pool {
 	allPools := []Pool{}
 
-	// FIX THIS CONFIG TODO
-	// MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-	POLYGON_URL := "https://polygon-rpc.com"
-	web3, err := web3.NewWeb3(POLYGON_URL)
-	if err != nil {
-		panic(err)
-	}
+	web3 := blockchain.GetWeb3()
 
-	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.FLASH_QUERY_ADDRESS)
+	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.Get().FLASH_QUERY_ADDRESS.Hex())
 	if err != nil {
 		panic(err)
 	}
 
 	// Get all pools for all dexes
-	for _, uniswappy_address := range config.UNISWAPPY_FACTORY_ADDRESSES {
+	for _, uniswappy_address := range config.Get().UNISWAPV2_FACTORIES {
 		var i int64 = 0
 		for {
-			slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(uniswappy_address), big.NewInt(i), big.NewInt(i+STEP_SIZE))
+			slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(uniswappy_address.Hex()), big.NewInt(i), big.NewInt(i+STEP_SIZE))
 			// Just casted from interface{} to [][3] Address
 			castedSlice, ok := slice.([][3]common.Address)
 			if !ok {
@@ -80,17 +74,9 @@ type Reserve struct {
 // }
 
 func UpdateReservesForPools(pools []Pool) []Reserve {
+	web3 := blockchain.GetWeb3()
 
-	// FIX THIS CONFIG TODO
-	// MUMBAI_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-	POLYGON_URL := "https://polygon-rpc.com"
-	web3, err := web3.NewWeb3(POLYGON_URL)
-
-	if err != nil {
-		panic(err)
-	}
-
-	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.FLASH_QUERY_ADDRESS)
+	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.Get().FLASH_QUERY_ADDRESS.Hex())
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +109,7 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 	denominator := big.NewInt(0).Mul(reserveIn, big.NewInt(1000))
 	denominator.Add(denominator, amountInWithFee)
 
-	if denominator == big.NewInt(0) {
+	if denominator.Sign() == 0 {
 		return big.NewInt(0)
 	}
 
