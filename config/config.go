@@ -1,14 +1,11 @@
 package config
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/joho/godotenv"
 )
-
-// TODO ENV VARS
-// godotenv.Load()
 
 const PROD = false
 
@@ -32,12 +29,14 @@ var lock = &sync.Mutex{}
 var GlobalConfig Config
 
 func Get() *Config {
+
+	// TODO ENV VARS
+	godotenv.Load()
+
 	if !GlobalConfig.init {
 		lock.Lock()
 		defer lock.Unlock()
 		if !GlobalConfig.init {
-			fmt.Println("Creating single instance now.")
-
 			if PROD {
 				RPC_URL := "https://polygon-mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
 				CHAIN_ID := int64(137)
