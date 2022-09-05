@@ -7,4 +7,4 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     log: true,
   });
 };
-module.exports.tags = ["MyContract"];
+module.exports.tags = ["FlashBotsUniswapQuery"];

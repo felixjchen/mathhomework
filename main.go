@@ -5,22 +5,37 @@ import (
 	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
 	"fmt"
+	"log"
 	"math/big"
 
+	"github.com/chenzhijie/go-web3/types"
 	"github.com/ethereum/go-ethereum/common"
+	"go.uber.org/zap"
 )
 
 func wethFilter(i uniswap.Pool) bool {
 	weth := config.Get().WETH_ADDRESS
 	return i.Token0 == weth || i.Token1 == weth
 }
+func tokenBlacklistFilter(i uniswap.Pool) bool {
+	_, token0Blacklisted := config.TOKEN_BLACKLIST[i.Token0]
+	_, token1Blacklisted := config.TOKEN_BLACKLIST[i.Token1]
+	return !token0Blacklisted && !token1Blacklisted
+}
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sugar := logger.Sugar()
 
 	web3 := blockchain.GetWeb3()
 
 	allPools := uniswap.GetAllPools()
-	fmt.Println("Got all pools")
+	allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
+	sugar.Info("Got all pools")
 
 	// pathing
 	// adjacency list
@@ -29,7 +44,7 @@ func main() {
 		tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
 		tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
 	}
-	fmt.Println("Created Graph")
+	sugar.Info("Created Graph")
 
 	// pool has weth
 	wethPools := uniswap.FilterPools(wethFilter, allPools)
@@ -49,10 +64,10 @@ func main() {
 			}
 		}
 	}
-	fmt.Println("Found all 2-hops")
+	sugar.Info("Found all 2-hops")
 
 	poolToReserves := uniswap.UpdateReservesForPools(wethPools)
-	fmt.Println("Updated Reserves")
+	sugar.Info("Updated Reserves")
 
 	// poolToReserves := make(map[uniswap.Pool]uniswap.Reserve)
 
@@ -80,12 +95,12 @@ func main() {
 
 		wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
 		arbProfit := big.NewInt(0).Sub(wethOut, wethIn)
-		fmt.Println(path, arbProfit)
-		fmt.Println(poolToReserves[path[0]], poolToReserves[path[1]])
-		// arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
-		// fmt.Println(path, arbProfit)
-		if arbProfit.Sign() == 1 {
-			fmt.Println("PROFIT", path, arbProfit)
+		// sugar.Info(path, arbProfit)
+		// sugar.Info(poolToReserves[path[0]], poolToReserves[path[1]])
+		arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
+		// sugar.Info(path, arbProfit)
+		if arbProfitMinusGas.Sign() == 1 {
+			sugar.Info("PROFIT", path, arbProfit)
 			// profitablePathes = append(profitablePathes, path)
 
 			// INEFFICIENT
@@ -105,9 +120,9 @@ func main() {
 			// if err != nil {
 			// 	panic(err)
 			// }
-			// fmt.Println(hex.EncodeToString(firstData))
-			// fmt.Println(firstTarget)
-			// fmt.Println(amount0Out, amount1Out, common.HexToAddress(config.BUNDLE_EXECUTOR_ADDRESS), []byte{})
+			// sugar.Info(hex.EncodeToString(firstData))
+			// sugar.Info(firstTarget)
+			// sugar.Info(amount0Out, amount1Out, common.HexToAddress(config.BUNDLE_EXECUTOR_ADDRESS), []byte{})
 
 			// pool2, err := web3.Eth.NewContract(config.PAIR_ABI, path[1].Address.String())
 			// if err != nil {
@@ -132,38 +147,48 @@ func main() {
 				panic(err)
 			}
 
-			// fmt.Println(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
+			// sugar.Info(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
 
 			// data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
 			// if err != nil {
 			// 	panic(err)
 			// }
 
-			fmt.Println([2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
-			fmt.Println(poolToReserves[path[0]], path[0].Address, poolToReserves[path[1]])
 			data, err := executor.EncodeABI("twohop", wethIn, [2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
 			if err != nil {
 				panic(err)
 			}
-
+			// TODO Fail simulation
 			// TODO Gas estimation
+			call := &types.CallMsg{
+				From: web3.Eth.Address(),
+				To:   executor.Address(),
+				Data: data,
+				Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
+			}
+			// fmt.Printf("call %v\n", call)
+			gasLimit, err := web3.Eth.EstimateGas(call)
+			if err != nil {
+				// panic(err)
+				sugar.Info(err)
+			}
+			fmt.Printf("Estimate gas limit %v\n", gasLimit)
 
 			// TODO not sync
-			tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
-				executor.Address(),
-				big.NewInt(0),
-				1010000,
-				web3.Utils.ToGWei(40),
-				web3.Utils.ToGWei(325),
-				data,
-			)
-			if err != nil {
-				panic(err)
-			}
-			if err == nil {
-				fmt.Printf("tx hash %v\n", tx.TxHash)
-				// panic(err)
-			}
+			// tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
+			// 	executor.Address(),
+			// 	big.NewInt(0),
+			// 	1010000,
+			// 	web3.Utils.ToGWei(40),
+			// 	web3.Utils.ToGWei(325),
+			// 	data,
+			// )
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// if err == nil {
+			// 	fmt.Printf("tx hash %v\n", tx.TxHash)
+			// }
 		}
 	}
 }
