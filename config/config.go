@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,7 @@ type Config struct {
 
 	UNISWAPV2_FACTORIES []common.Address
 
-	// PRIVATE_KEY string
+	PRIVATE_KEY string
 }
 
 var lock = &sync.Mutex{}
@@ -51,7 +52,9 @@ func Get() *Config {
 
 				UNISWAPV2_FACTORIES := []common.Address{SUSHISWAP_FACTORY_ADDRESS, QUICKSWAP_FACTORY_ADDRESS}
 
-				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES}
+				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
+
+				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
 			} else {
 				RPC_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
 				CHAIN_ID := int64(80001)
@@ -65,7 +68,9 @@ func Get() *Config {
 				SUSHISWAP_FACTORY_ADDRESS := common.HexToAddress("0xc35DADB65012eC5796536bD9864eD8773aBc74C4") // Mumbai and Polygon
 				UNISWAPV2_FACTORIES := []common.Address{SUSHISWAP_FACTORY_ADDRESS, QUICKSWAP_FACTORY_ADDRESS}
 
-				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES}
+				PRIVATE_KEY := os.Getenv("MUMBAI_PRIVATE_KEY")
+
+				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
 
 			}
 		}

@@ -26,8 +26,7 @@ func GetWeb3() *web3.Web3 {
 
 			newWeb3.Eth.SetChainId(config.Get().CHAIN_ID)
 
-			// TODO bye PK
-			err = newWeb3.Eth.SetAccount("ea0d86ce7b7c394ca92cafadb8c8b50e82820d79de32f993a78b16c0ab5b73ad")
+			err = newWeb3.Eth.SetAccount(config.Get().PRIVATE_KEY)
 			if err != nil {
 				panic(err)
 			}
