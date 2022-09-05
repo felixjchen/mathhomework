@@ -30,13 +30,15 @@ https://github.com/chenzhijie/go-web3/blob/master/examples/contract/erc20.go
 
 # TODO 
 
-better config
-
-volume optimisation
+threading
 
 more dexes
 
+volume optimisation + flashbots
+
 logging
+
+load abi from onchain folder
 
 loading bars
 
