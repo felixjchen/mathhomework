@@ -41,6 +41,33 @@ const UNISWAP_FLASH_QUERY_ABI = `[{
 }]`
 
 const BUNDLE_EXECTOR_ABI = `[{
+	"inputs": [
+		{
+			"internalType": "uint256",
+			"name": "wethIn",
+			"type": "uint256"
+		},
+		{
+			"internalType": "address[]",
+			"name": "targets",
+			"type": "address[]"
+		},
+		{
+			"internalType": "uint256[]",
+			"name": "amount0Outs",
+			"type": "uint256[]"
+		},
+		{
+			"internalType": "uint256[]",
+			"name": "amount1Outs",
+			"type": "uint256[]"
+		}
+	],
+	"name": "twohop",
+	"outputs": [],
+	"stateMutability": "payable",
+	"type": "function"
+},{
   "inputs": [{
     "internalType": "address payable",
     "name": "_to",

@@ -20,12 +20,13 @@ type Reserve struct {
 // 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
 // }
 
-func UpdateReservesForPools(pools []Pool) []Reserve {
+func UpdateReservesForPools(pools []Pool) map[Pool]Reserve {
 	var wg sync.WaitGroup
 
 	// mu protects reserves across threads
 	var mu sync.Mutex
-	reserves := []Reserve{}
+	// reserves := []Reserve{}
+	poolToReserves := make(map[Pool]Reserve)
 
 	web3 := blockchain.GetWeb3()
 
@@ -63,13 +64,15 @@ func UpdateReservesForPools(pools []Pool) []Reserve {
 			}
 
 			mu.Lock()
-			reserves = append(reserves, reservesToAdd...)
+			for i, reserve := range reservesToAdd {
+				poolToReserves[pools[start+i]] = reserve
+			}
 			mu.Unlock()
 		}(i, j)
 	}
 
 	wg.Wait()
-	return reserves
+	return poolToReserves
 }
 
 func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *big.Int {

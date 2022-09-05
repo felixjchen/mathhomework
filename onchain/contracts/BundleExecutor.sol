@@ -3,6 +3,15 @@ pragma solidity ^0.8.9;
 
 pragma experimental ABIEncoderV2;
 
+interface IUniswapV2Pair {
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external;
+}
+
 interface IERC20 {
     event Approval(
         address indexed owner,
@@ -50,8 +59,7 @@ contract FlashBotsMultiCall {
     address private immutable executor;
 
     // TODO IDK
-    IWETH private constant WETH =
-        IWETH(0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889);
+    IWETH private WETH = IWETH(0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889);
 
     modifier onlyExecutor() {
         require(msg.sender == executor, "Only executor");
@@ -71,6 +79,10 @@ contract FlashBotsMultiCall {
         }
     }
 
+    function setWeth(address _new) public onlyOwner {
+        WETH = IWETH(_new);
+    }
+
     receive() external payable {}
 
     function sweepERC20(
@@ -79,6 +91,34 @@ contract FlashBotsMultiCall {
         uint256 _amount
     ) external onlyOwner {
         token.transfer(_to, _amount);
+    }
+
+    function twohop(
+        uint256 wethIn,
+        address[] calldata targets,
+        uint256[] calldata amount0Outs,
+        uint256[] calldata amount1Outs
+    ) external payable onlyExecutor {
+        uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
+        bool success = WETH.transfer(targets[0], wethIn);
+        require(success, "first weth fail");
+        IUniswapV2Pair(targets[0]).swap(
+            amount0Outs[0],
+            amount1Outs[0],
+            targets[1],
+            ""
+        );
+        IUniswapV2Pair(targets[1]).swap(
+            amount0Outs[1],
+            amount1Outs[1],
+            address(this),
+            ""
+        );
+        uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
+        require(
+            _wethBalanceAfter > _wethBalanceBefore,
+            "reverted non profitable"
+        );
     }
 
     function uniswapWeth(
