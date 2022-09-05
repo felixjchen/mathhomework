@@ -58,7 +58,7 @@ func Get() *Config {
 				CHAIN_ID := int64(80001)
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x8Bdc9d868950E6993B2d0Aa8e56E1cEDa5140200")     // Mumbai
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x85D3606Ca17b654916950153d4263530EA9E303C") // Mumbai
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x444908F8f8f7fC7BAa948782A7e89785c61AeD7E") // Mumbai
 
 				WETH_ADDRESS := common.HexToAddress("0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889") //  Mumbai
 

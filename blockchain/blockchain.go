@@ -33,11 +33,7 @@ func GetWeb3() *web3.Web3 {
 			}
 
 			Web3 = newWeb3
-		} else {
-			fmt.Println("Web3 instance already created.")
 		}
-	} else {
-		fmt.Println("Web3 instance already created.")
 	}
 
 	return Web3

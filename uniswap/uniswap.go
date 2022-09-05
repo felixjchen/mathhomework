@@ -29,9 +29,15 @@ func GetAllPools() []Pool {
 
 	// Get all pools for all dexes
 	for _, uniswappy_address := range config.Get().UNISWAPV2_FACTORIES {
-		var i int64 = 0
-		for {
-			slice, _ := contract.Call("getPairsByIndexRange", common.HexToAddress(uniswappy_address.Hex()), big.NewInt(i), big.NewInt(i+STEP_SIZE))
+
+		allPairsLengthInterface, _ := contract.Call("getAllPairsLength", uniswappy_address)
+		allPairsLength, ok := allPairsLengthInterface.(*big.Int)
+		if !ok {
+			fmt.Println("can not convert allPairsLength")
+		}
+
+		for i := int64(0); i < allPairsLength.Int64(); i += STEP_SIZE {
+			slice, _ := contract.Call("getPairsByIndexRange", uniswappy_address, big.NewInt(i), big.NewInt(i+STEP_SIZE))
 			// Just casted from interface{} to [][3] Address
 			castedSlice, ok := slice.([][3]common.Address)
 			if !ok {

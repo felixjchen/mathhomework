@@ -1,6 +1,24 @@
 package config
 
 const UNISWAP_FLASH_QUERY_ABI = `[{
+	"inputs": [
+		{
+			"internalType": "contract UniswapV2Factory",
+			"name": "_uniswapFactory",
+			"type": "address"
+		}
+	],
+	"name": "getAllPairsLength",
+	"outputs": [
+		{
+			"internalType": "uint256",
+			"name": "",
+			"type": "uint256"
+		}
+	],
+	"stateMutability": "view",
+	"type": "function"
+},{
   "inputs": [{
     "internalType": "contract UniswapV2Factory",
     "name": "_uniswapFactory",
