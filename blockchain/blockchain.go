@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"arbitrage_go/config"
-	"fmt"
 	"sync"
 
 	"github.com/chenzhijie/go-web3"
@@ -17,8 +16,6 @@ func GetWeb3() *web3.Web3 {
 		lock.Lock()
 		defer lock.Unlock()
 		if Web3 == nil {
-			fmt.Println("Creating Web3 instance.")
-
 			newWeb3, err := web3.NewWeb3(config.Get().RPC_URL)
 			if err != nil {
 				panic(err)

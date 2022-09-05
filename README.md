@@ -17,7 +17,7 @@ https://github.com/chenzhijie/go-web3
 
 ## DEXES
 
-https://defiprime.com/polygon#decentralized-exchanges-on-polygon
+<!-- https://defiprime.com/polygon#decentralized-exchanges-on-polygon -->
 
 https://cryptoticker.io/en/top-5-dex-polygon/
 

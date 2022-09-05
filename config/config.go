@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const PROD = false
+const PROD = true
 
 type Config struct {
 	init bool
@@ -49,8 +49,9 @@ func Get() *Config {
 
 				QUICKSWAP_FACTORY_ADDRESS := common.HexToAddress("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32") // Mumbai and Polygon
 				SUSHISWAP_FACTORY_ADDRESS := common.HexToAddress("0xc35DADB65012eC5796536bD9864eD8773aBc74C4") // Mumbai and Polygon
+				DFYN_FACTORY_ADDRESS := common.HexToAddress("0xE7Fb3e833eFE5F9c441105EB65Ef8b261266423B")      // Polygon
 
-				UNISWAPV2_FACTORIES := []common.Address{SUSHISWAP_FACTORY_ADDRESS, QUICKSWAP_FACTORY_ADDRESS}
+				UNISWAPV2_FACTORIES := []common.Address{SUSHISWAP_FACTORY_ADDRESS, QUICKSWAP_FACTORY_ADDRESS, DFYN_FACTORY_ADDRESS}
 
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 

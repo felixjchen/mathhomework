@@ -22,17 +22,17 @@ func main() {
 	allPools := uniswap.GetAllPools()
 	fmt.Println("Got all pools")
 
-	// pool has weth
-	wethPools := uniswap.FilterPools(wethFilter, allPools)
-
 	// pathing
+	// adjacency list
 	tokensToPools := make(map[common.Address][]uniswap.Pool)
 	for _, pool := range allPools {
 		tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
 		tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
 	}
-
 	fmt.Println("Created Graph")
+
+	// pool has weth
+	wethPools := uniswap.FilterPools(wethFilter, allPools)
 
 	// two hop
 	weth := config.Get().WETH_ADDRESS
@@ -52,19 +52,7 @@ func main() {
 	}
 	fmt.Println("Found all 2-hops")
 
-	// for {
-	// pricing
-
-	// TODO Thread Reserve Updates
-	STEP_SIZE := 500
-	reserves := []uniswap.Reserve{}
-	for i := 0; i < len(wethPools); i += STEP_SIZE {
-		j := i + STEP_SIZE
-		if j > len(wethPools) {
-			j = len(wethPools)
-		}
-		reserves = append(reserves, uniswap.UpdateReservesForPools(wethPools[i:j])...)
-	}
+	reserves := uniswap.UpdateReservesForPools(wethPools)
 	fmt.Println("Updated Reserves")
 
 	poolToReserves := make(map[uniswap.Pool]uniswap.Reserve)
@@ -75,6 +63,7 @@ func main() {
 	// profitablePathes := [][2]uniswap.Pool{}
 	// Simulate path
 	for _, path := range pathes {
+		panic(1)
 		wethIn := web3.Utils.ToWei(0.001)
 
 		// price first hop
@@ -170,6 +159,5 @@ func main() {
 				// panic(err)
 			}
 		}
-		// }
 	}
 }
