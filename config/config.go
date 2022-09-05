@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TODO ENV VARS
 // godotenv.Load()
 
 const PROD = false
@@ -56,10 +57,10 @@ func Get() *Config {
 				RPC_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
 				CHAIN_ID := int64(80001)
 
-				FLASH_QUERY_ADDRESS := common.HexToAddress("0x8Bdc9d868950E6993B2d0Aa8e56E1cEDa5140200")     // Polygon
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x1f39F18d6b1e397D4E05A149148C9Fa9Bcc0eB67") // Mumbai
+				FLASH_QUERY_ADDRESS := common.HexToAddress("0x8Bdc9d868950E6993B2d0Aa8e56E1cEDa5140200")     // Mumbai
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x85D3606Ca17b654916950153d4263530EA9E303C") // Mumbai
 
-				WETH_ADDRESS := common.HexToAddress("0x9c3c9283d3e44854697cd22d3faa240cfb032889") //  Polygon
+				WETH_ADDRESS := common.HexToAddress("0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889") //  Mumbai
 
 				QUICKSWAP_FACTORY_ADDRESS := common.HexToAddress("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32") // Mumbai and Polygon
 				SUSHISWAP_FACTORY_ADDRESS := common.HexToAddress("0xc35DADB65012eC5796536bD9864eD8773aBc74C4") // Mumbai and Polygon

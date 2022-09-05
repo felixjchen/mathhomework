@@ -55,7 +55,7 @@ func main() {
 	// for {
 	// pricing
 
-	// TODO BLEH UGLY
+	// TODO Thread Reserve Updates
 	STEP_SIZE := 500
 	reserves := []uniswap.Reserve{}
 	for i := 0; i < len(wethPools); i += STEP_SIZE {
@@ -75,7 +75,7 @@ func main() {
 	// profitablePathes := [][2]uniswap.Pool{}
 	// Simulate path
 	for _, path := range pathes {
-		wethIn := web3.Utils.ToWei(0.01)
+		wethIn := web3.Utils.ToWei(0.001)
 
 		// price first hop
 		wethReserve := poolToReserves[path[0]].Reserve0
@@ -96,9 +96,9 @@ func main() {
 
 		wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
 		arbProfit := big.NewInt(0).Sub(wethOut, wethIn)
-		arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
-		fmt.Println(arbProfit)
-		if arbProfitMinusGas.Sign() == 1 {
+		// arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
+		// fmt.Println(path, arbProfit)
+		if arbProfit.Sign() == 1 {
 			fmt.Println("PROFIT", path, big.NewInt(0).Sub(wethOut, wethIn))
 			// profitablePathes = append(profitablePathes, path)
 
@@ -146,13 +146,14 @@ func main() {
 				panic(err)
 			}
 
-			// fmt.Println(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
+			fmt.Println(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
 
 			data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
 			if err != nil {
 				panic(err)
 			}
 
+			// TODO not sync
 			tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
 				executor.Address(),
 				big.NewInt(0),
@@ -161,6 +162,9 @@ func main() {
 				web3.Utils.ToGWei(325),
 				data,
 			)
+			if err != nil {
+				panic(err)
+			}
 			if err == nil {
 				fmt.Printf("tx hash %v\n", tx.TxHash)
 				// panic(err)

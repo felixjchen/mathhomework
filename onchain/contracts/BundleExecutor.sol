@@ -48,8 +48,10 @@ interface IWETH is IERC20 {
 contract FlashBotsMultiCall {
     address private immutable owner;
     address private immutable executor;
+
+    // TODO IDK
     IWETH private constant WETH =
-        IWETH(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
+        IWETH(0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889);
 
     modifier onlyExecutor() {
         require(msg.sender == executor, "Only executor");
