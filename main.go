@@ -35,7 +35,7 @@ func main() {
 
 	allPools := uniswap.GetAllPools()
 	allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
-	sugar.Info("Got all pools")
+	sugar.Info("Got ", len(allPools), " pools")
 
 	// pathing
 	// adjacency list
@@ -71,10 +71,9 @@ func main() {
 
 	// poolToReserves := make(map[uniswap.Pool]uniswap.Reserve)
 
-	// profitablePathes := [][2]uniswap.Pool{}
 	// Simulate path
 	for _, path := range pathes {
-		wethIn := web3.Utils.ToWei(0.001)
+		wethIn := web3.Utils.ToWei(0.02)
 
 		// price first hop
 		wethReserve := poolToReserves[path[0]].Reserve0
@@ -92,22 +91,17 @@ func main() {
 			wethReserve = poolToReserves[path[1]].Reserve1
 			intermediateReserve = poolToReserves[path[1]].Reserve0
 		}
-
 		wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
+
 		arbProfit := big.NewInt(0).Sub(wethOut, wethIn)
 		// sugar.Info(path, arbProfit)
 		// sugar.Info(poolToReserves[path[0]], poolToReserves[path[1]])
 		arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
 		// sugar.Info(path, arbProfit)
 		if arbProfitMinusGas.Sign() == 1 {
-			sugar.Info("PROFIT", path, arbProfit)
+			// sugar.Info("PROFIT", path, arbProfit)
 			// profitablePathes = append(profitablePathes, path)
 
-			// INEFFICIENT
-			// pool, err := web3.Eth.NewContract(config.PAIR_ABI, path[0].Address.String())
-			// if err != nil {
-			// 	panic(err)
-			// }
 			// Build first txn
 			amount0OutFirst := big.NewInt(0)
 			amount1OutFirst := intermediateAmount
@@ -116,18 +110,7 @@ func main() {
 				amount1OutFirst = big.NewInt(0)
 			}
 			firstTarget := common.Address(path[0].Address)
-			// firstData, err := pool.EncodeABI("swap", amount0Out, amount1Out, path[1].Address, []byte{})
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// sugar.Info(hex.EncodeToString(firstData))
-			// sugar.Info(firstTarget)
-			// sugar.Info(amount0Out, amount1Out, common.HexToAddress(config.BUNDLE_EXECUTOR_ADDRESS), []byte{})
 
-			// pool2, err := web3.Eth.NewContract(config.PAIR_ABI, path[1].Address.String())
-			// if err != nil {
-			// 	panic(err)
-			// }
 			// build second txn
 			amount0OutSecond := wethOut
 			amount1OutSecond := big.NewInt(0)
@@ -136,24 +119,12 @@ func main() {
 				amount1OutSecond = wethOut
 			}
 			secondTarget := common.Address(path[1].Address)
-			// secondData, err := pool2.EncodeABI("swap", amount0Out, amount1Out, config.Get().BUNDLE_EXECUTOR_ADDRESS, []byte{})
-			// if err != nil {
-			// 	panic(err)
-			// }
 
 			// run bundle
 			executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
 			if err != nil {
 				panic(err)
 			}
-
-			// sugar.Info(wethIn, big.NewInt(0), [1]common.Address{firstTarget}, [1][]byte{firstData})
-
-			// data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
-			// if err != nil {
-			// 	panic(err)
-			// }
-
 			data, err := executor.EncodeABI("twohop", wethIn, [2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
 			if err != nil {
 				panic(err)
@@ -170,25 +141,26 @@ func main() {
 			gasLimit, err := web3.Eth.EstimateGas(call)
 			if err != nil {
 				// panic(err)
-				sugar.Info(err)
-			}
-			fmt.Printf("Estimate gas limit %v\n", gasLimit)
+				// sugar.Error(err)
+			} else {
+				fmt.Printf("Estimate gas limit %v\n", gasLimit)
 
-			// TODO not sync
-			// tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
-			// 	executor.Address(),
-			// 	big.NewInt(0),
-			// 	1010000,
-			// 	web3.Utils.ToGWei(40),
-			// 	web3.Utils.ToGWei(325),
-			// 	data,
-			// )
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// if err == nil {
-			// 	fmt.Printf("tx hash %v\n", tx.TxHash)
-			// }
+				// TODO not sync
+				tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
+					executor.Address(),
+					big.NewInt(0),
+					1010000,
+					web3.Utils.ToGWei(40),
+					web3.Utils.ToGWei(325),
+					data,
+				)
+				if err != nil {
+					panic(err)
+				}
+				if err == nil {
+					fmt.Printf("tx hash %v\n", tx.TxHash)
+				}
+			}
 		}
 	}
 }

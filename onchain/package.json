@@ -3,7 +3,8 @@
     "test": "hardhat test",
     "deploy": "hardhat deploy",
     "verify": "hardhat etherscan-verify",
-    "abi": "hardhat export-abi"
+    "abi": "hardhat export-abi",
+    "arb": "hardhat run --network mumbai scripts/create_mumbai_arb.js"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

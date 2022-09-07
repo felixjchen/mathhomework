@@ -35,7 +35,7 @@ func UpdateReservesForPools(pools []Pool) map[Pool]Reserve {
 		poolAddresses = append(poolAddresses, pool.Address)
 	}
 
-	STEP_SIZE := 1000
+	STEP_SIZE := 500
 	for i := 0; i < len(pools); i += STEP_SIZE {
 		j := i + STEP_SIZE
 		if j > len(pools) {
