@@ -5,7 +5,6 @@ import (
 	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
 	"arbitrage_go/util"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -58,8 +57,6 @@ func main() {
 	poolToReserves := uniswap.UpdateReservesForPools(wethPools)
 	sugar.Info("Updated Reserves")
 
-	// poolToReserves := make(map[uniswap.Pool]uniswap.Reserve)
-
 	// Simulate path
 	for _, path := range pathes {
 
@@ -78,8 +75,6 @@ func main() {
 			wethIn := uniswap.GetOptimalWethIn(E0, E1)
 
 			if wethIn.Sign() == 1 {
-				sugar.Info(E0, E1, wethIn)
-
 				// price first hop
 				wethReserve := poolToReserves[path[0]].Reserve0
 				intermediateReserve := poolToReserves[path[0]].Reserve1
@@ -99,73 +94,70 @@ func main() {
 				wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
 
 				arbProfit := big.NewInt(0).Sub(wethOut, wethIn)
-				sugar.Info("PROFIT", path, arbProfit)
-				// profitablePathes = append(profitablePathes, path)
+				arbProfitSubGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5971360001492840))
 
-				// Build first txn
-				amount0OutFirst := big.NewInt(0)
-				amount1OutFirst := intermediateAmount
-				if path[0].Token1 == weth {
-					amount0OutFirst = intermediateAmount
-					amount1OutFirst = big.NewInt(0)
-				}
-				firstTarget := common.Address(path[0].Address)
+				if arbProfitSubGas.Sign() == 1 {
+					sugar.Info(" PROFIT ", path, arbProfit, " SUB GAS ", arbProfitSubGas)
+					// Build first txn
+					amount0OutFirst := big.NewInt(0)
+					amount1OutFirst := intermediateAmount
+					if path[0].Token1 == weth {
+						amount0OutFirst = intermediateAmount
+						amount1OutFirst = big.NewInt(0)
+					}
+					firstTarget := common.Address(path[0].Address)
 
-				// build second txn
-				amount0OutSecond := wethOut
-				amount1OutSecond := big.NewInt(0)
-				if path[1].Token1 == weth {
-					amount0OutSecond = big.NewInt(0)
-					amount1OutSecond = wethOut
-				}
-				secondTarget := common.Address(path[1].Address)
+					// build second txn
+					amount0OutSecond := wethOut
+					amount1OutSecond := big.NewInt(0)
+					if path[1].Token1 == weth {
+						amount0OutSecond = big.NewInt(0)
+						amount1OutSecond = wethOut
+					}
+					secondTarget := common.Address(path[1].Address)
 
-				// run bundle
-				executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
-				if err != nil {
-					panic(err)
-				}
-				data, err := executor.EncodeABI("twohop", wethIn, [2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
-				if err != nil {
-					panic(err)
-				}
-				// TODO Fail simulation
-				// TODO Gas estimation
-				call := &types.CallMsg{
-					From: web3.Eth.Address(),
-					To:   executor.Address(),
-					Data: data,
-					Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
-				}
-				// fmt.Printf("call %v\n", call)
-				gasLimit, err := web3.Eth.EstimateGas(call)
-				if err != nil {
-					// panic(err)
-					// sugar.Error(err)
-				} else {
-					fmt.Printf("Estimate gas limit %v\n", gasLimit)
-
-					// TODO not sync
-					tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
-						executor.Address(),
-						big.NewInt(0),
-						gasLimit*2,
-						web3.Utils.ToGWei(40),
-						web3.Utils.ToGWei(325),
-						data,
-					)
+					// run bundle
+					executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
 					if err != nil {
 						panic(err)
 					}
-					if err == nil {
-						sugar.Info("tx hash %v\n", tx.TxHash)
+					data, err := executor.EncodeABI("twohop", wethIn, [2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
+					if err != nil {
+						panic(err)
+					}
+					// TODO Fail simulation
+					// TODO Gas estimation
+					call := &types.CallMsg{
+						From: web3.Eth.Address(),
+						To:   executor.Address(),
+						Data: data,
+						Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
+					}
+					gasLimit, err := web3.Eth.EstimateGas(call)
+					if err != nil {
+						// panic(err)
+						sugar.Error(err)
+					} else {
+						sugar.Info("Estimate gas limit %v\n", gasLimit)
+
+						// TODO not sync
+						tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
+							executor.Address(),
+							big.NewInt(0),
+							gasLimit*2,
+							web3.Utils.ToGWei(40),
+							web3.Utils.ToGWei(325),
+							data,
+						)
+						if err != nil {
+							panic(err)
+						}
+						if err == nil {
+							sugar.Info("tx hash %v\n", tx.TxHash)
+						}
 					}
 				}
 			}
 		}
-
-		// arbProfitMinusGas := big.NewInt(0).Sub(arbProfit, big.NewInt(5286645002416752))
-		// sugar.Info(path, arbProfit)
-
 	}
 }
