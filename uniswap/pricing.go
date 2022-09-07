@@ -87,3 +87,52 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 
 	return numerator.Div(numerator, denominator)
 }
+
+// TODO: Can optimise memory
+// https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/70366b389dca7eb0ba9a437598e2f72328a5613c/src/common.py#L229
+func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *big.Int) {
+	// 1000 * R1_ +  997 * R1
+	A := big.NewInt(0).Mul(big.NewInt(1000), R1_)
+	B := big.NewInt(0).Mul(big.NewInt(997), R1)
+	denominator := big.NewInt(0).Add(A, B)
+
+	if denominator.Sign() == 0 {
+		return big.NewInt(0), big.NewInt(0)
+	}
+
+	var E0 *big.Int
+	{
+		// 1000 * R1_ * R0
+		numerator := big.NewInt(0).Mul(R0, R1_)
+		numerator.Mul(numerator, big.NewInt(1000))
+		E0 = big.NewInt(0).Div(numerator, denominator)
+	}
+
+	var E1 *big.Int
+	{
+		// 997 * R1 * R2
+		numerator := big.NewInt(0).Mul(R1, R2)
+		numerator.Mul(numerator, big.NewInt(997))
+		E1 = big.NewInt(0).Div(numerator, denominator)
+	}
+
+	return E0, E1
+}
+
+// TODO: Can optimise memory
+// https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/master/src/common.py#L171
+func GetOptimalWethIn(E0 *big.Int, E1 *big.Int) *big.Int {
+	// 1000 (sqrt(E0 * E1 * 997 / 1000) - E0)
+	A := big.NewInt(0).Mul(E0, E1)
+	A.Mul(A, big.NewInt(997))
+	A.Mul(A, big.NewInt(1000))
+	A.Sqrt(A)
+
+	B := big.NewInt(0).Mul(big.NewInt(1000), E0)
+
+	numerator := A.Sub(A, B)
+	// 997
+	denominator := big.NewInt(997)
+
+	return big.NewInt(0).Div(numerator, denominator)
+}

@@ -44,8 +44,8 @@ async function main() {
   const QS_PAIR = UniswapV2PairFactory.attach(QS_PAIR_ADDRESS);
   const SS_PAIR = UniswapV2PairFactory.attach(SS_PAIR_ADDRESS);
 
-  await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
-  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.002"));
+  await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("200"));
+  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
 
   await WMATIC.transfer(QS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
   await WMATIC.transfer(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));

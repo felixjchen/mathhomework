@@ -69,3 +69,30 @@ unname functions
 // 	panic(err)
 // }
 ```
+
+### OLD PRICING
+
+
+```
+// wethIn := web3.Utils.ToWei(0.0001)
+
+// price first hop
+// wethReserve := poolToReserves[path[0]].Reserve0
+// intermediateReserve := poolToReserves[path[0]].Reserve1
+// if path[0].Token1 == weth {
+// 	wethReserve = poolToReserves[path[0]].Reserve1
+// 	intermediateReserve = poolToReserves[path[0]].Reserve0
+// }
+// intermediateAmount := uniswap.GetAmountOut(wethIn, wethReserve, intermediateReserve)
+
+// // price second hop
+// wethReserve = poolToReserves[path[1]].Reserve0
+// intermediateReserve = poolToReserves[path[1]].Reserve1
+// if path[1].Token1 == weth {
+// 	wethReserve = poolToReserves[path[1]].Reserve1
+// 	intermediateReserve = poolToReserves[path[1]].Reserve0
+// }
+// wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
+
+// arbProfit := big.NewInt(0).Sub(wethOut, wethIn)
+```
