@@ -54,6 +54,7 @@ func main() {
 	pathes := uniswap.GetTwoHops(tokensToPools)
 	sugar.Info("Found all 2-hops")
 
+	// TODO only if needed
 	poolToReserves := uniswap.UpdateReservesForPools(wethPools)
 	sugar.Info("Updated Reserves")
 
@@ -125,7 +126,6 @@ func main() {
 					if err != nil {
 						panic(err)
 					}
-					// TODO Fail simulation
 					// TODO Gas estimation
 					call := &types.CallMsg{
 						From: web3.Eth.Address(),
