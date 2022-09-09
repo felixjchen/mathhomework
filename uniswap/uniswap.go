@@ -17,6 +17,14 @@ type Pool struct {
 	Address common.Address
 }
 
+func GetAllPoolsSet(pools []Pool) map[common.Address]bool {
+	set := make(map[common.Address]bool)
+	for _, pool := range pools {
+		set[pool.Address] = true
+	}
+	return set
+}
+
 func GetAllPools() []Pool {
 	allPools := []Pool{}
 
@@ -49,10 +57,9 @@ func GetAllPools() []Pool {
 				poolsToAdd = append(poolsToAdd, Pool{Token0: arr[0], Token1: arr[1], Address: arr[2]})
 			}
 			allPools = append(allPools, poolsToAdd...)
-			i += STEP_SIZE
-			if len(poolsToAdd) == 0 {
-				break
-			}
+			// if len(poolsToAdd) == 0 {
+			// 	break
+			// }
 		}
 	}
 

@@ -113,7 +113,7 @@ func (e *Eth) GetBlockHeaderByNumber(number *big.Int, full bool) (*eTypes.Header
 }
 
 // Get block header by block number
-func (e *Eth) GetBlocByNumber(number *big.Int, full bool) (*eTypes.Block, error) {
+func (e *Eth) GetBlockByNumber(number *big.Int, full bool) (*eTypes.Block, error) {
 	return e.getBlock("eth_getBlockByNumber", toBlockNumArg(number), full)
 }
 

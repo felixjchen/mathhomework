@@ -10,12 +10,14 @@ import (
 
 // https://polygonscan.com/address/0x8Bdc9d868950E6993B2d0Aa8e56E1cEDa5140200#code 20cents here
 
-const PROD = true
+const PROD = false
 
 type Config struct {
 	init bool
 
-	RPC_URL  string
+	RPC_URL_HTTP string
+	RPC_URL_WS   string
+
 	CHAIN_ID int64
 
 	FLASH_QUERY_ADDRESS     common.Address
@@ -41,7 +43,9 @@ func Get() *Config {
 		defer lock.Unlock()
 		if !GlobalConfig.init {
 			if PROD {
-				RPC_URL := "https://polygon-mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+				RPC_URL_HTTP := "https://polygon-mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+				RPC_URL_WS := "https://polygon-mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+
 				CHAIN_ID := int64(137)
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x9C7FfE06A4c5C58A5D60bC95baAb56F558A4dACf")     // Polygon
@@ -59,9 +63,10 @@ func Get() *Config {
 
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 
-				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
+				GlobalConfig = Config{true, RPC_URL_HTTP, RPC_URL_WS, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
 			} else {
-				RPC_URL := "https://polygon-mumbai.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
+				RPC_URL_HTTP := "https://nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
+				RPC_URL_WS := "wss://ws-nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
 				CHAIN_ID := int64(80001)
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x8Bdc9d868950E6993B2d0Aa8e56E1cEDa5140200")     // Mumbai
@@ -75,7 +80,7 @@ func Get() *Config {
 
 				PRIVATE_KEY := os.Getenv("MUMBAI_PRIVATE_KEY")
 
-				GlobalConfig = Config{true, RPC_URL, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
+				GlobalConfig = Config{true, RPC_URL_HTTP, RPC_URL_WS, CHAIN_ID, FLASH_QUERY_ADDRESS, BUNDLE_EXECUTOR_ADDRESS, WETH_ADDRESS, UNISWAPV2_FACTORIES, PRIVATE_KEY}
 
 			}
 		}

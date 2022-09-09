@@ -23,7 +23,7 @@ func tokenBlacklistFilter(i uniswap.Pool) bool {
 	return !token0Blacklisted && !token1Blacklisted
 }
 
-func main() {
+func main2() {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatal(err)

@@ -9,9 +9,9 @@ import (
 )
 
 type Web3 struct {
-	Eth   *eth.Eth
-	Utils *utils.Utils
-	c     *rpc.Client
+	Eth    *eth.Eth
+	Utils  *utils.Utils
+	Client *rpc.Client
 }
 
 func NewWeb3(provider string) (*Web3, error) {
@@ -41,9 +41,9 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 
 	u := utils.NewUtils()
 	w := &Web3{
-		Eth:   e,
-		Utils: u,
-		c:     c,
+		Eth:    e,
+		Utils:  u,
+		Client: c,
 	}
 
 	// Default poll timeout 2 hours
@@ -53,6 +53,6 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 
 func (w *Web3) Version() (string, error) {
 	var out string
-	err := w.c.Call("web3_clientVersion", &out)
+	err := w.Client.Call("web3_clientVersion", &out)
 	return out, err
 }

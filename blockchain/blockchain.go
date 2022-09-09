@@ -16,7 +16,7 @@ func GetWeb3() *web3.Web3 {
 		lock.Lock()
 		defer lock.Unlock()
 		if Web3 == nil {
-			newWeb3, err := web3.NewWeb3(config.Get().RPC_URL)
+			newWeb3, err := web3.NewWeb3(config.Get().RPC_URL_HTTP)
 			if err != nil {
 				panic(err)
 			}
