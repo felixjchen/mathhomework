@@ -14,21 +14,21 @@ import (
 )
 
 type Contract struct {
-	abi      abi.ABI
+	Abi      abi.ABI
 	addr     common.Address
 	provider *rpc.Client
 }
 
 func (c *Contract) AllMethods() []string {
 	methodNames := make([]string, 0)
-	for methodName := range c.abi.Methods {
+	for methodName := range c.Abi.Methods {
 		methodNames = append(methodNames, methodName)
 	}
 	return methodNames
 }
 
 func (c *Contract) Methods(methodName string) abi.Method {
-	m, _ := c.abi.Methods[methodName]
+	m, _ := c.Abi.Methods[methodName]
 	return m
 }
 
@@ -59,7 +59,7 @@ func (c *Contract) Call(methodName string, args ...interface{}) (interface{}, er
 		return nil, err
 	}
 
-	response, err := c.abi.Unpack(methodName, outputBytes)
+	response, err := c.Abi.Unpack(methodName, outputBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (c *Contract) CallWithMultiReturns(methodName string, args ...interface{}) 
 		return nil, err
 	}
 
-	response, err := c.abi.Unpack(methodName, outputBytes)
+	response, err := c.Abi.Unpack(methodName, outputBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (c *Contract) CallWithFromAndValue(
 		return nil, err
 	}
 
-	response, err := c.abi.Unpack(methodName, outputBytes)
+	response, err := c.Abi.Unpack(methodName, outputBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func NewContract(abiString string, contractAddr ...string) (*Contract, error) {
 		addr = common.HexToAddress(contractAddr[0])
 	}
 	c := &Contract{
-		abi:  a,
+		Abi:  a,
 		addr: addr,
 	}
 	return c, nil

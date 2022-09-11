@@ -1,9 +1,9 @@
-package main
+package programs
 
 import (
 	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
-	"time"
+	"fmt"
 
 	"github.com/chenzhijie/go-web3"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,13 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// func tokenBlacklistFilter(i uniswap.Pool) bool {
-// 	_, token0Blacklisted := config.TOKEN_BLACKLIST[i.Token0]
-// 	_, token1Blacklisted := config.TOKEN_BLACKLIST[i.Token1]
-// 	return !token0Blacklisted && !token1Blacklisted
-// }
-
-func main() {
+func Mempool() {
 	logger, _ := zap.NewProduction()
 	sugar := logger.Sugar()
 	sugar.Info("Started")
@@ -37,9 +31,10 @@ func main() {
 	sugar.Info("Created Graph")
 
 	// Mempool watching
+	incomingTxns := make(chan *types.Transaction)
 	web3Http, _ := web3.NewWeb3(config.Get().RPC_URL_HTTP)
 	web3WS, _ := web3.NewWeb3(config.Get().RPC_URL_WS)
-	incomingTxns := make(chan *types.Transaction)
+	// https://github.com/chenzhijie/go-web3/blob/master/rpc/subscribe_test.go
 	_, err := web3WS.Client.Subscribe("newPendingTransactions", func(data []byte) {
 		// Get TXN
 		var hash common.Hash
@@ -56,11 +51,23 @@ func main() {
 		if txn.To() != nil {
 			_, exist := allPoolsSet[*txn.To()]
 			if exist {
-				sugar.Info(txn.Hash().Hex(), txn.Data())
+
+				txnData := txn.Data()
+				sugar.Info(txn.Hash().Hex(), txnData)
+				// set to generic pool
+				pool, _ := web3Http.Eth.NewContract(config.PAIR_ABI, txn.To().Hex())
+				method, _ := pool.Abi.MethodById(txnData)
+
+				// https://gist.github.com/crazygit/9279a3b26461d7cb03e807a6362ec855
+				inputsSigData := txnData[4:]
+				inputsMap := make(map[string]interface{})
+				if err := method.Inputs.UnpackIntoMap(inputsMap, inputsSigData); err != nil {
+					sugar.Fatal(err)
+				} else {
+					fmt.Println(inputsMap)
+				}
+
 			}
 		}
 	}
-
-	<-time.After(10 * time.Minute)
-
 }
