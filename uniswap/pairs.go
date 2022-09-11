@@ -17,50 +17,59 @@ type Pair struct {
 	Address common.Address
 }
 
-func GetAllPairsSet(pools []Pair) map[common.Address]bool {
-	set := make(map[common.Address]bool)
-	for _, pool := range pools {
-		set[pool.Address] = true
-	}
-	return set
-}
+// func GetAllPairsSet(pools []Pair) map[common.Address]bool {
+// 	set := make(map[common.Address]bool)
+// 	for _, pool := range pools {
+// 		set[pool.Address] = true
+// 	}
+// 	return set
+// }
 
-func GetAllPairs() []Pair {
+func GetAllPairsForFactory(factory common.Address) []Pair {
 	allPairs := []Pair{}
 
 	web3 := blockchain.GetWeb3()
-
 	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.Get().FLASH_QUERY_ADDRESS.Hex())
 	if err != nil {
 		panic(err)
 	}
+	allPairsLengthInterface, _ := contract.Call("getAllPairsLength", factory)
+	allPairsLength, _ := allPairsLengthInterface.(*big.Int)
 
-	// Get all pools for all dexes
-	for _, uniswappy_address := range config.Get().UNISWAPV2_FACTORIES {
-
-		allPairsLengthInterface, _ := contract.Call("getAllPairsLength", uniswappy_address)
-		allPairsLength, ok := allPairsLengthInterface.(*big.Int)
+	for i := int64(0); i < allPairsLength.Int64(); i += STEP_SIZE {
+		slice, _ := contract.Call("getPairsByIndexRange", factory, big.NewInt(i), big.NewInt(i+STEP_SIZE))
+		// Just casted from interface{} to [][3] Address
+		castedSlice, ok := slice.([][3]common.Address)
 		if !ok {
-			fmt.Println("can not convert allPairsLength")
+			fmt.Println("can not convert pool")
 		}
-
-		for i := int64(0); i < allPairsLength.Int64(); i += STEP_SIZE {
-			slice, _ := contract.Call("getPairsByIndexRange", uniswappy_address, big.NewInt(i), big.NewInt(i+STEP_SIZE))
-			// Just casted from interface{} to [][3] Address
-			castedSlice, ok := slice.([][3]common.Address)
-			if !ok {
-				fmt.Println("can not convert pool")
-			}
-			// Create structs TODO MAP this
-			pairsToAdd := []Pair{}
-			for _, arr := range castedSlice {
-				pairsToAdd = append(pairsToAdd, Pair{Token0: arr[0], Token1: arr[1], Address: arr[2]})
-			}
-			allPairs = append(allPairs, pairsToAdd...)
+		// TODO_LOW Create structs map this
+		pairsToAdd := []Pair{}
+		for _, arr := range castedSlice {
+			pairsToAdd = append(pairsToAdd, Pair{Token0: arr[0], Token1: arr[1], Address: arr[2]})
 		}
+		allPairs = append(allPairs, pairsToAdd...)
 	}
 
 	return allPairs
+}
+
+func GetAllPairsMap() map[common.Address][]Pair {
+	allPairsMap := make(map[common.Address][]Pair)
+	for _, factory := range config.Get().UNISWAPV2_FACTORIES {
+		pairsToAdd := GetAllPairsForFactory(factory)
+		allPairsMap[factory] = append(allPairsMap[factory], pairsToAdd...)
+	}
+	return allPairsMap
+}
+
+func GetAllPairsArray() []Pair {
+	allPairsArray := []Pair{}
+	for _, factory := range config.Get().UNISWAPV2_FACTORIES {
+		pairsToAdd := GetAllPairsForFactory(factory)
+		allPairsArray = append(allPairsArray, pairsToAdd...)
+	}
+	return allPairsArray
 }
 
 func FilterPairs(candidate func(Pair) bool, pools []Pair) []Pair {

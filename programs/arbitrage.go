@@ -24,7 +24,7 @@ func Arbitrage() {
 
 	web3 := blockchain.GetWeb3()
 
-	allPairs := uniswap.GetAllPairs()
+	allPairs := uniswap.GetAllPairsArray()
 	allPairs = uniswap.FilterPairs(util.TokenBlacklistFilter, allPairs)
 	sugar.Info("Got ", len(allPairs), " pairs")
 
