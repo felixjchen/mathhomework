@@ -11,13 +11,13 @@ import (
 
 const STEP_SIZE int64 = 1000
 
-type Pool struct {
+type Pair struct {
 	Token0  common.Address
 	Token1  common.Address
 	Address common.Address
 }
 
-func GetAllPoolsSet(pools []Pool) map[common.Address]bool {
+func GetAllPairsSet(pools []Pair) map[common.Address]bool {
 	set := make(map[common.Address]bool)
 	for _, pool := range pools {
 		set[pool.Address] = true
@@ -25,8 +25,8 @@ func GetAllPoolsSet(pools []Pool) map[common.Address]bool {
 	return set
 }
 
-func GetAllPools() []Pool {
-	allPools := []Pool{}
+func GetAllPairs() []Pair {
+	allPairs := []Pair{}
 
 	web3 := blockchain.GetWeb3()
 
@@ -52,26 +52,23 @@ func GetAllPools() []Pool {
 				fmt.Println("can not convert pool")
 			}
 			// Create structs TODO MAP this
-			poolsToAdd := []Pool{}
+			pairsToAdd := []Pair{}
 			for _, arr := range castedSlice {
-				poolsToAdd = append(poolsToAdd, Pool{Token0: arr[0], Token1: arr[1], Address: arr[2]})
+				pairsToAdd = append(pairsToAdd, Pair{Token0: arr[0], Token1: arr[1], Address: arr[2]})
 			}
-			allPools = append(allPools, poolsToAdd...)
-			// if len(poolsToAdd) == 0 {
-			// 	break
-			// }
+			allPairs = append(allPairs, pairsToAdd...)
 		}
 	}
 
-	return allPools
+	return allPairs
 }
 
-func FilterPools(candidate func(Pool) bool, pools []Pool) []Pool {
-	filteredPools := []Pool{}
+func FilterPairs(candidate func(Pair) bool, pools []Pair) []Pair {
+	filteredPairs := []Pair{}
 	for _, pool := range pools {
 		if candidate(pool) {
-			filteredPools = append(filteredPools, pool)
+			filteredPairs = append(filteredPairs, pool)
 		}
 	}
-	return filteredPools
+	return filteredPairs
 }

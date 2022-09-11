@@ -17,19 +17,19 @@ func Mempool() {
 	sugar := logger.Sugar()
 	sugar.Info("Started")
 
-	allPools := uniswap.GetAllPools()
-	// allPoolsSet := uniswap.GetAllPoolsSet(allPools)
-	// allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
-	sugar.Info("Got ", len(allPools), " pools")
+	// allPools := uniswap.GetAllPools()
+	// // allPoolsSet := uniswap.GetAllPoolsSet(allPools)
+	// // allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
+	// sugar.Info("Got ", len(allPools), " pools")
 
-	// pathing
-	// adjacency list
-	tokensToPools := make(map[common.Address][]uniswap.Pool)
-	for _, pool := range allPools {
-		tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
-		tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
-	}
-	sugar.Info("Created Graph")
+	// // pathing
+	// // adjacency list
+	// tokensToPools := make(map[common.Address][]uniswap.Pool)
+	// for _, pool := range allPools {
+	// 	tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
+	// 	tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
+	// }
+	// sugar.Info("Created Graph")
 
 	// Mempool watching
 	incomingTxns := make(chan *types.Transaction)
@@ -70,7 +70,7 @@ func Mempool() {
 					swapExactTokensForTokensArgs := uniswap.GetSwapExactTokensForTokensArgs(args)
 					fmt.Println(swapExactTokensForTokensArgs)
 				}
-				// TODO_MED other funcs
+				// TODO_HIGH other funcs
 			}
 		}
 	}

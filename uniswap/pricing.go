@@ -20,13 +20,13 @@ type Reserve struct {
 // 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
 // }
 
-func UpdateReservesForPools(pools []Pool) map[Pool]Reserve {
+func UpdateReservesForPairs(pools []Pair) map[Pair]Reserve {
 	var wg sync.WaitGroup
 
 	// mu protects reserves across threads
 	var mu sync.Mutex
 	// reserves := []Reserve{}
-	poolToReserves := make(map[Pool]Reserve)
+	poolToReserves := make(map[Pair]Reserve)
 
 	web3 := blockchain.GetWeb3()
 
@@ -80,15 +80,19 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 	numerator := big.NewInt(0).Mul(amountInWithFee, reserveOut)
 	denominator := big.NewInt(0).Mul(reserveIn, big.NewInt(1000))
 	denominator.Add(denominator, amountInWithFee)
-
 	if denominator.Sign() == 0 {
 		return big.NewInt(0)
 	}
-
 	return numerator.Div(numerator, denominator)
 }
 
-// TODO: Can optimise memory
+func GetAmountsOut(poolToReserves map[Pair]Reserve, amountIn *big.Int, path []common.Address) []*big.Int {
+	amounts := []*big.Int{amountIn}
+
+	return amounts
+}
+
+// TODO_LOW: Can optimise memory
 // https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/70366b389dca7eb0ba9a437598e2f72328a5613c/src/common.py#L229
 func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *big.Int) {
 	// 1000 * R1_ +  997 * R1
@@ -119,7 +123,7 @@ func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *bi
 	return E0, E1
 }
 
-// TODO: Can optimise memory
+// TODO_LOW: Can optimise memory
 // https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/master/src/common.py#L171
 func GetOptimalWethIn(E0 *big.Int, E1 *big.Int) *big.Int {
 	// 1000 (sqrt(E0 * E1 * 997 / 1000) - E0)

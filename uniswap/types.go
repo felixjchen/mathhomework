@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TODO_MED cleanup types
+
 type SwapExactTokensForTokensArgs struct {
 	amountIn     *big.Int
 	amountOutMin *big.Int

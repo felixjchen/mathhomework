@@ -24,29 +24,29 @@ func Arbitrage() {
 
 	web3 := blockchain.GetWeb3()
 
-	allPools := uniswap.GetAllPools()
-	allPools = uniswap.FilterPools(util.TokenBlacklistFilter, allPools)
-	sugar.Info("Got ", len(allPools), " pools")
+	allPairs := uniswap.GetAllPairs()
+	allPairs = uniswap.FilterPairs(util.TokenBlacklistFilter, allPairs)
+	sugar.Info("Got ", len(allPairs), " pairs")
 
 	// pathing
 	// adjacency list
-	tokensToPools := make(map[common.Address][]uniswap.Pool)
-	for _, pool := range allPools {
-		tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
-		tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
+	tokensToPairs := make(map[common.Address][]uniswap.Pair)
+	for _, pair := range allPairs {
+		tokensToPairs[pair.Token0] = append(tokensToPairs[pair.Token0], pair)
+		tokensToPairs[pair.Token1] = append(tokensToPairs[pair.Token1], pair)
 	}
 	sugar.Info("Created Graph")
 
-	// pool has weth
-	wethPools := uniswap.FilterPools(util.WethFilter, allPools)
+	// pair has weth
+	wethPairs := uniswap.FilterPairs(util.WethFilter, allPairs)
 
 	// two hop
 	weth := config.Get().WETH_ADDRESS
-	pathes := uniswap.GetTwoHops(tokensToPools)
+	pathes := uniswap.GetTwoHops(tokensToPairs)
 	sugar.Info("Found all 2-hops")
 
 	// TODO only if needed
-	poolToReserves := uniswap.UpdateReservesForPools(wethPools)
+	pairToReserves := uniswap.UpdateReservesForPairs(wethPairs)
 	sugar.Info("Updated Reserves")
 
 	// Simulate path
@@ -54,11 +54,11 @@ func Arbitrage() {
 
 		intermediateToken := util.Ternary(path[0].Token0 != weth, path[0].Token0, path[0].Token1)
 
-		R0 := util.Ternary(path[0].Token0 == weth, poolToReserves[path[0]].Reserve0, poolToReserves[path[0]].Reserve1)
-		R1 := util.Ternary(path[0].Token0 == intermediateToken, poolToReserves[path[0]].Reserve0, poolToReserves[path[0]].Reserve1)
+		R0 := util.Ternary(path[0].Token0 == weth, pairToReserves[path[0]].Reserve0, pairToReserves[path[0]].Reserve1)
+		R1 := util.Ternary(path[0].Token0 == intermediateToken, pairToReserves[path[0]].Reserve0, pairToReserves[path[0]].Reserve1)
 
-		R1_ := util.Ternary(path[1].Token0 == intermediateToken, poolToReserves[path[1]].Reserve0, poolToReserves[path[1]].Reserve1)
-		R2 := util.Ternary(path[1].Token0 == weth, poolToReserves[path[1]].Reserve0, poolToReserves[path[1]].Reserve1)
+		R1_ := util.Ternary(path[1].Token0 == intermediateToken, pairToReserves[path[1]].Reserve0, pairToReserves[path[1]].Reserve1)
+		R2 := util.Ternary(path[1].Token0 == weth, pairToReserves[path[1]].Reserve0, pairToReserves[path[1]].Reserve1)
 
 		E0, E1 := uniswap.GetE0E1(R0, R1, R1_, R2)
 
@@ -73,20 +73,20 @@ func Arbitrage() {
 
 			if wethIn.Sign() == 1 {
 				// price first hop
-				wethReserve := poolToReserves[path[0]].Reserve0
-				intermediateReserve := poolToReserves[path[0]].Reserve1
+				wethReserve := pairToReserves[path[0]].Reserve0
+				intermediateReserve := pairToReserves[path[0]].Reserve1
 				if path[0].Token1 == weth {
-					wethReserve = poolToReserves[path[0]].Reserve1
-					intermediateReserve = poolToReserves[path[0]].Reserve0
+					wethReserve = pairToReserves[path[0]].Reserve1
+					intermediateReserve = pairToReserves[path[0]].Reserve0
 				}
 				intermediateAmount := uniswap.GetAmountOut(wethIn, wethReserve, intermediateReserve)
 
 				// price second hop
-				wethReserve = poolToReserves[path[1]].Reserve0
-				intermediateReserve = poolToReserves[path[1]].Reserve1
+				wethReserve = pairToReserves[path[1]].Reserve0
+				intermediateReserve = pairToReserves[path[1]].Reserve1
 				if path[1].Token1 == weth {
-					wethReserve = poolToReserves[path[1]].Reserve1
-					intermediateReserve = poolToReserves[path[1]].Reserve0
+					wethReserve = pairToReserves[path[1]].Reserve1
+					intermediateReserve = pairToReserves[path[1]].Reserve0
 				}
 				wethOut := uniswap.GetAmountOut(intermediateAmount, intermediateReserve, wethReserve)
 
