@@ -61,13 +61,16 @@ func Mempool() {
 				method, _ := router.Abi.MethodById(txnData)
 
 				// https://gist.github.com/crazygit/9279a3b26461d7cb03e807a6362ec855
-				inputsMap := make(map[string]interface{})
-				if err := method.Inputs.UnpackIntoMap(inputsMap, txnData[4:]); err != nil {
+				args := make(map[string]interface{})
+				if err := method.Inputs.UnpackIntoMap(args, txnData[4:]); err != nil {
 					sugar.Fatal(err)
 				}
 
-				fmt.Println(method, inputsMap)
-
+				if method.Name == "swapExactTokensForTokens" {
+					swapExactTokensForTokensArgs := uniswap.GetSwapExactTokensForTokensArgs(args)
+					fmt.Println(swapExactTokensForTokensArgs)
+				}
+				// TODO_MED other funcs
 			}
 		}
 	}
