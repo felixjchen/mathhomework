@@ -61,6 +61,15 @@ func Ternary[T any](condition bool, If, Else T) T {
 	return Else
 }
 
+func Contains[T comparable](arr []T, x T) bool {
+	for _, v := range arr {
+		if v == x {
+			return true
+		}
+	}
+	return false
+}
+
 func WethFilter(i uniswap.Pool) bool {
 	weth := config.Get().WETH_ADDRESS
 	return i.Token0 == weth || i.Token1 == weth

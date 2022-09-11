@@ -3,6 +3,7 @@ package programs
 import (
 	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
+	"arbitrage_go/util"
 	"fmt"
 
 	"github.com/chenzhijie/go-web3"
@@ -17,7 +18,7 @@ func Mempool() {
 	sugar.Info("Started")
 
 	allPools := uniswap.GetAllPools()
-	allPoolsSet := uniswap.GetAllPoolsSet(allPools)
+	// allPoolsSet := uniswap.GetAllPoolsSet(allPools)
 	// allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
 	sugar.Info("Got ", len(allPools), " pools")
 
@@ -49,23 +50,23 @@ func Mempool() {
 	for txn := range incomingTxns {
 		// txn.to() is nil for contract creation
 		if txn.To() != nil {
-			_, exist := allPoolsSet[*txn.To()]
-			if exist {
-
+			// If this is a router call
+			// TODO_LOW map here
+			if util.Contains(config.Get().UNISWAPV2_ROUTER02S, *txn.To()) {
 				txnData := txn.Data()
-				sugar.Info(txn.Hash().Hex(), txnData)
-				// set to generic pool
-				pool, _ := web3Http.Eth.NewContract(config.PAIR_ABI, txn.To().Hex())
-				method, _ := pool.Abi.MethodById(txnData)
+				sugar.Info(txn.Hash().Hex(), " ", txn.To())
+
+				// TODO_MED set to generic router
+				router, _ := web3Http.Eth.NewContract(config.UNISWAP_ROUTER_02_ABI, txn.To().Hex())
+				method, _ := router.Abi.MethodById(txnData)
 
 				// https://gist.github.com/crazygit/9279a3b26461d7cb03e807a6362ec855
-				inputsSigData := txnData[4:]
 				inputsMap := make(map[string]interface{})
-				if err := method.Inputs.UnpackIntoMap(inputsMap, inputsSigData); err != nil {
+				if err := method.Inputs.UnpackIntoMap(inputsMap, txnData[4:]); err != nil {
 					sugar.Fatal(err)
-				} else {
-					fmt.Println(inputsMap)
 				}
+
+				fmt.Println(method, inputsMap)
 
 			}
 		}

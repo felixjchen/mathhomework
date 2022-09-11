@@ -4,7 +4,9 @@
     "deploy": "hardhat deploy",
     "verify": "hardhat etherscan-verify",
     "abi": "hardhat export-abi",
-    "arb": "hardhat run --network mumbai scripts/create_mumbai_arb.js"
+    "arb": "hardhat run --network mumbai scripts/create_mumbai_arb.js",
+    "fc": "hardhat run --network mumbai scripts/create_fok_cok.js",
+    "setft": "hardhat run --network mumbai scripts/swap_exact_token_for_token.js"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
