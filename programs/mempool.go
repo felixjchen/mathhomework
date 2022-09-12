@@ -17,10 +17,11 @@ func Mempool() {
 	sugar := logger.Sugar()
 	sugar.Info("Started")
 
-	// allPools := uniswap.GetAllPools()
-	// // allPoolsSet := uniswap.GetAllPoolsSet(allPools)
-	// // allPools = uniswap.FilterPools(tokenBlacklistFilter, allPools)
-	// sugar.Info("Got ", len(allPools), " pools")
+	allPairs := uniswap.GetAllPairsArray()
+	sugar.Info("Got ", len(allPairs), " pairs")
+
+	pairToReserves := uniswap.GetReservesForPairs(allPairs)
+	sugar.Info("Updated", len(allPairs), " Reserves")
 
 	// // pathing
 	// // adjacency list
@@ -73,7 +74,7 @@ func Mempool() {
 					factory := config.Get().ROUTER02_FACTORY_MAP[*txn.To()]
 					pairMap := factoryPairMap[factory]
 
-					amountsOut := uniswap.GetAmountsOut(pairMap, args.AmountIn, args.Path)
+					amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
 
 					fmt.Println(amountsOut)
 				}

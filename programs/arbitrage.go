@@ -36,8 +36,8 @@ func Arbitrage() {
 	sugar.Info("Created Graph")
 
 	wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
-	pairToReserves := uniswap.UpdateReservesForPairs(wethPairs)
-	sugar.Info("Updated Reserves")
+	pairToReserves := uniswap.GetReservesForPairs(wethPairs)
+	sugar.Info("Updated ", len(wethPairs), "Reserves")
 
 	pathes := uniswap.GetTwoHops(tokensToPairs)
 	sugar.Info("Found ", len(pathes), " 2-hops")

@@ -20,7 +20,7 @@ type Reserve struct {
 // 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
 // }
 
-func UpdateReservesForPairs(pools []Pair) map[Pair]Reserve {
+func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 	var wg sync.WaitGroup
 
 	// mu protects reserves across threads
@@ -86,7 +86,7 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 	return numerator.Div(numerator, denominator)
 }
 
-func GetAmountsOut(pairMap map[common.Address]map[common.Address]Pair, amountIn *big.Int, path []common.Address) []*big.Int {
+func GetAmountsOut(pairMap map[common.Address]map[common.Address]Pair, pairToReserves map[Pair]Reserve, amountIn *big.Int, path []common.Address) []*big.Int {
 	amounts := []*big.Int{amountIn}
 
 	return amounts
