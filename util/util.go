@@ -1,10 +1,5 @@
 package util
 
-import (
-	"arbitrage_go/config"
-	"arbitrage_go/uniswap"
-)
-
 // https://itnext.io/generic-map-filter-and-reduce-in-go-3845781a591c
 type Iterator[T any] interface {
 	Next() bool
@@ -68,14 +63,4 @@ func Contains[T comparable](arr []T, x T) bool {
 		}
 	}
 	return false
-}
-
-func WethFilter(i uniswap.Pair) bool {
-	weth := config.Get().WETH_ADDRESS
-	return i.Token0 == weth || i.Token1 == weth
-}
-func TokenBlacklistFilter(i uniswap.Pair) bool {
-	_, token0Blacklisted := config.TOKEN_BLACKLIST[i.Token0]
-	_, token1Blacklisted := config.TOKEN_BLACKLIST[i.Token1]
-	return !token0Blacklisted && !token1Blacklisted
 }

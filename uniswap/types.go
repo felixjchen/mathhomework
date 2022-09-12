@@ -9,11 +9,11 @@ import (
 // TODO_MED cleanup types
 
 type SwapExactTokensForTokensArgs struct {
-	amountIn     *big.Int
-	amountOutMin *big.Int
-	path         []common.Address
-	to           common.Address
-	deadline     *big.Int
+	AmountIn     *big.Int
+	AmountOutMin *big.Int
+	Path         []common.Address
+	To           common.Address
+	Deadline     *big.Int
 }
 
 func GetSwapExactTokensForTokensArgs(args map[string]interface{}) SwapExactTokensForTokensArgs {

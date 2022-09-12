@@ -31,6 +31,8 @@ func Mempool() {
 	// }
 	// sugar.Info("Created Graph")
 
+	factoryPairMap := uniswap.GetFactoryPairMap()
+
 	// Mempool watching
 	incomingTxns := make(chan *types.Transaction)
 	web3Http, _ := web3.NewWeb3(config.Get().RPC_URL_HTTP)
@@ -61,14 +63,19 @@ func Mempool() {
 				method, _ := router.Abi.MethodById(txnData)
 
 				// https://gist.github.com/crazygit/9279a3b26461d7cb03e807a6362ec855
-				args := make(map[string]interface{})
-				if err := method.Inputs.UnpackIntoMap(args, txnData[4:]); err != nil {
+				raw := make(map[string]interface{})
+				if err := method.Inputs.UnpackIntoMap(raw, txnData[4:]); err != nil {
 					sugar.Fatal(err)
 				}
 
 				if method.Name == "swapExactTokensForTokens" {
-					swapExactTokensForTokensArgs := uniswap.GetSwapExactTokensForTokensArgs(args)
-					fmt.Println(swapExactTokensForTokensArgs)
+					args := uniswap.GetSwapExactTokensForTokensArgs(raw)
+					factory := config.Get().ROUTER02_FACTORY_MAP[*txn.To()]
+					pairMap := factoryPairMap[factory]
+
+					amountsOut := uniswap.GetAmountsOut(pairMap, args.AmountIn, args.Path)
+
+					fmt.Println(amountsOut)
 				}
 				// TODO_HIGH other funcs
 			}

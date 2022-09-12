@@ -51,16 +51,20 @@ func GetAllPairsForFactory(factory common.Address) []Pair {
 		allPairs = append(allPairs, pairsToAdd...)
 	}
 
+	allPairs = FilterPairs(TokenBlacklistFilter, allPairs)
 	return allPairs
 }
 
-func GetAllPairsMap() map[common.Address][]Pair {
-	allPairsMap := make(map[common.Address][]Pair)
+// dexAddress => token0Address => token1Address => pairAddress
+func GetFactoryPairMap() map[common.Address]map[common.Address]map[common.Address]Pair {
+	factoryPairMap := make(map[common.Address]map[common.Address]map[common.Address]Pair)
 	for _, factory := range config.Get().UNISWAPV2_FACTORIES {
-		pairsToAdd := GetAllPairsForFactory(factory)
-		allPairsMap[factory] = append(allPairsMap[factory], pairsToAdd...)
+		pairs := GetAllPairsForFactory(factory)
+		for _, pair := range pairs {
+			factoryPairMap[factory][pair.Token0][pair.Token1] = pair
+		}
 	}
-	return allPairsMap
+	return factoryPairMap
 }
 
 func GetAllPairsArray() []Pair {
@@ -80,4 +84,14 @@ func FilterPairs(candidate func(Pair) bool, pools []Pair) []Pair {
 		}
 	}
 	return filteredPairs
+}
+
+func WethFilter(i Pair) bool {
+	weth := config.Get().WETH_ADDRESS
+	return i.Token0 == weth || i.Token1 == weth
+}
+func TokenBlacklistFilter(i Pair) bool {
+	_, token0Blacklisted := config.TOKEN_BLACKLIST[i.Token0]
+	_, token1Blacklisted := config.TOKEN_BLACKLIST[i.Token1]
+	return !token0Blacklisted && !token1Blacklisted
 }

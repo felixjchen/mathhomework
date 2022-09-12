@@ -25,10 +25,8 @@ func Arbitrage() {
 	web3 := blockchain.GetWeb3()
 
 	allPairs := uniswap.GetAllPairsArray()
-	allPairs = uniswap.FilterPairs(util.TokenBlacklistFilter, allPairs)
 	sugar.Info("Got ", len(allPairs), " pairs")
 
-	// pathing
 	// adjacency list
 	tokensToPairs := make(map[common.Address][]uniswap.Pair)
 	for _, pair := range allPairs {
@@ -37,18 +35,14 @@ func Arbitrage() {
 	}
 	sugar.Info("Created Graph")
 
-	// pair has weth
-	wethPairs := uniswap.FilterPairs(util.WethFilter, allPairs)
-
-	// two hop
-	weth := config.Get().WETH_ADDRESS
-	pathes := uniswap.GetTwoHops(tokensToPairs)
-	sugar.Info("Found all 2-hops")
-
-	// TODO only if needed
+	wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
 	pairToReserves := uniswap.UpdateReservesForPairs(wethPairs)
 	sugar.Info("Updated Reserves")
 
+	pathes := uniswap.GetTwoHops(tokensToPairs)
+	sugar.Info("Found ", len(pathes), " 2-hops")
+
+	weth := config.Get().WETH_ADDRESS
 	// Simulate path
 	for _, path := range pathes {
 
