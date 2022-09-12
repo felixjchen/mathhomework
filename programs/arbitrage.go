@@ -27,6 +27,10 @@ func Arbitrage() {
 	allPairs := uniswap.GetAllPairsArray()
 	sugar.Info("Got ", len(allPairs), " pairs")
 
+	wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
+	pairToReserves := uniswap.GetReservesForPairs(wethPairs)
+	sugar.Info("Updated ", len(wethPairs), "Reserves")
+
 	// adjacency list
 	tokensToPairs := make(map[common.Address][]uniswap.Pair)
 	for _, pair := range allPairs {
@@ -34,10 +38,6 @@ func Arbitrage() {
 		tokensToPairs[pair.Token1] = append(tokensToPairs[pair.Token1], pair)
 	}
 	sugar.Info("Created Graph")
-
-	wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
-	pairToReserves := uniswap.GetReservesForPairs(wethPairs)
-	sugar.Info("Updated ", len(wethPairs), "Reserves")
 
 	pathes := uniswap.GetTwoHops(tokensToPairs)
 	sugar.Info("Found ", len(pathes), " 2-hops")

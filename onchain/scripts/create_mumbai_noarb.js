@@ -10,8 +10,11 @@ const { ethers } = require("ethers");
 const WMATIC_ADDRESS = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
 const QS_FACTORY_ADDRESS = "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32";
 const SS_FACTORY_ADDRESS = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const QS_ROUTER_ADDRESS = "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff";
 
 async function main() {
+  const [signer] = await hre.ethers.getSigners();
+
   const WMATICFACTORY = await hre.ethers.getContractFactory("WMATIC");
   const WMATIC = WMATICFACTORY.attach(WMATIC_ADDRESS);
 
@@ -45,14 +48,17 @@ async function main() {
   const SS_PAIR = UniswapV2PairFactory.attach(SS_PAIR_ADDRESS);
 
   await ERC20.mint(signer.address, ethers.utils.parseEther("99999"));
-  await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("200"));
-  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
 
+  await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
   await WMATIC.transfer(QS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
+
+  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
   await WMATIC.transfer(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
 
   await (await QS_PAIR.sync()).wait();
   await (await SS_PAIR.sync()).wait();
+
+  await ERC20.approve(QS_ROUTER_ADDRESS, ethers.constants.MaxUint256);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

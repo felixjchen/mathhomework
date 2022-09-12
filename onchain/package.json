@@ -5,6 +5,7 @@
     "verify": "hardhat etherscan-verify",
     "abi": "hardhat export-abi",
     "arb": "hardhat run --network mumbai scripts/create_mumbai_arb.js",
+    "noarb": "hardhat run --network mumbai scripts/create_mumbai_noarb.js",
     "fc": "hardhat run --network mumbai scripts/create_fok_cok.js",
     "setft": "hardhat run --network mumbai scripts/swap_exact_token_for_token.js"
   },

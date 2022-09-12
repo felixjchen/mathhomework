@@ -23,14 +23,23 @@ func Mempool() {
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
 	sugar.Info("Updated ", len(allPairs), " Reserves")
 
-	// // pathing
-	// // adjacency list
-	// tokensToPools := make(map[common.Address][]uniswap.Pool)
-	// for _, pool := range allPools {
-	// 	tokensToPools[pool.Token0] = append(tokensToPools[pool.Token0], pool)
-	// 	tokensToPools[pool.Token1] = append(tokensToPools[pool.Token1], pool)
-	// }
-	// sugar.Info("Created Graph")
+	// adjacency list
+	tokensToPairs := make(map[common.Address][]uniswap.Pair)
+	for _, pair := range allPairs {
+		tokensToPairs[pair.Token0] = append(tokensToPairs[pair.Token0], pair)
+		tokensToPairs[pair.Token1] = append(tokensToPairs[pair.Token1], pair)
+	}
+	sugar.Info("Created Graph")
+
+	pathes := uniswap.GetTwoHops(tokensToPairs)
+	sugar.Info("Found ", len(pathes), " 2-hops")
+
+	// TODO_MED wasted computation on second pair (its actually okay to try both directions)
+	pairToPathes := make(map[uniswap.Pair][][2]uniswap.Pair)
+	for _, path := range pathes {
+		pairToPathes[path[0]] = append(pairToPathes[path[0]], path)
+		pairToPathes[path[1]] = append(pairToPathes[path[1]], path)
+	}
 
 	factoryPairMap := uniswap.GetFactoryPairMap()
 	sugar.Info("Updated factoryPairMap")
@@ -75,9 +84,21 @@ func Mempool() {
 					factory := config.Get().ROUTER02_FACTORY_MAP[*txn.To()]
 					pairMap := factoryPairMap[factory]
 
-					amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
+					if len(args.Path) == 2 {
 
-					fmt.Println(amountsOut)
+						amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
+						fmt.Println(amountsOut)
+						// n-1 pairs to update (1) for now
+
+						updatedPair := pairMap[args.Path[0]][args.Path[1]]
+						updatedPathes := pairToPathes[updatedPair]
+
+						for _, path := range updatedPathes {
+							// simulate future state
+							fmt.Println(path)
+						}
+					}
+
 				}
 				// TODO_HIGH other funcs
 			}
