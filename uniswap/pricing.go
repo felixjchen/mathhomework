@@ -89,7 +89,22 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 func GetAmountsOut(pairMap map[common.Address]map[common.Address]Pair, pairToReserves map[Pair]Reserve, amountIn *big.Int, path []common.Address) []*big.Int {
 	amounts := []*big.Int{amountIn}
 
+	for i := 0; i < len(path)-1; i++ {
+		pair := pairMap[path[i]][path[i+1]]
+		reserveIn, reserveOut := SortReserves(path[i], pair, pairToReserves[pair])
+		amountOut := GetAmountOut(amounts[len(amounts)-1], reserveIn, reserveOut)
+		amounts = append(amounts, amountOut)
+	}
+
 	return amounts
+}
+
+func SortReserves(tokenIn common.Address, pair Pair, reserve Reserve) (*big.Int, *big.Int) {
+	if pair.Token0 == tokenIn {
+		return reserve.Reserve0, reserve.Reserve1
+	} else {
+		return reserve.Reserve1, reserve.Reserve0
+	}
 }
 
 // TODO_LOW: Can optimise memory

@@ -60,8 +60,13 @@ func GetFactoryPairMap() map[common.Address]map[common.Address]map[common.Addres
 	factoryPairMap := make(map[common.Address]map[common.Address]map[common.Address]Pair)
 	for _, factory := range config.Get().UNISWAPV2_FACTORIES {
 		pairs := GetAllPairsForFactory(factory)
+		factoryPairMap[factory] = make(map[common.Address]map[common.Address]Pair)
 		for _, pair := range pairs {
+			factoryPairMap[factory][pair.Token0] = make(map[common.Address]Pair)
+			factoryPairMap[factory][pair.Token1] = make(map[common.Address]Pair)
+			// TODO_LOW suboptimal here
 			factoryPairMap[factory][pair.Token0][pair.Token1] = pair
+			factoryPairMap[factory][pair.Token1][pair.Token0] = pair
 		}
 	}
 	return factoryPairMap

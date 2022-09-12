@@ -21,7 +21,7 @@ func Mempool() {
 	sugar.Info("Got ", len(allPairs), " pairs")
 
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
-	sugar.Info("Updated", len(allPairs), " Reserves")
+	sugar.Info("Updated ", len(allPairs), " Reserves")
 
 	// // pathing
 	// // adjacency list
@@ -33,6 +33,7 @@ func Mempool() {
 	// sugar.Info("Created Graph")
 
 	factoryPairMap := uniswap.GetFactoryPairMap()
+	sugar.Info("Updated factoryPairMap")
 
 	// Mempool watching
 	incomingTxns := make(chan *types.Transaction)
