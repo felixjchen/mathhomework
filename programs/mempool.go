@@ -84,17 +84,18 @@ func Mempool() {
 					factory := config.Get().ROUTER02_FACTORY_MAP[*txn.To()]
 					pairMap := factoryPairMap[factory]
 
+					// TODO_HIGH Trade is 2 hop (walletA -> Pair -> walletB)
 					if len(args.Path) == 2 {
-
 						amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
 						fmt.Println(amountsOut)
-						// n-1 pairs to update (1) for now
 
 						updatedPair := pairMap[args.Path[0]][args.Path[1]]
 						updatedPathes := pairToPathes[updatedPair]
 
+						// simulate future state
+						reserve := pairToReserves[updatedPair]
+
 						for _, path := range updatedPathes {
-							// simulate future state
 							fmt.Println(path)
 						}
 					}
