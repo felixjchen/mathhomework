@@ -81,7 +81,7 @@ func main() {
 
 	txHash, err := web3.Eth.SyncSendRawTransaction(
 		common.HexToAddress(tokenAddr),
-		big.NewInt(0),
+		new(big.Int),
 		gasLimit,
 		web3.Utils.ToGWei(1),
 		approveInputData,

@@ -317,7 +317,7 @@ func (e *Eth) EstimateFee() (*EstimateFee, error) {
 	potentialMaxFee := big.NewInt(1).Mul(header.BaseFee, getBaseFeeMultiplier(header.BaseFee))
 	potentialMaxFee = big.NewInt(1).Div(potentialMaxFee, big.NewInt(10))
 
-	maxFeePerGas := big.NewInt(0)
+	maxFeePerGas := new(big.Int)
 
 	if priorityFee.Cmp(potentialMaxFee) > 0 {
 		maxFeePerGas = big.NewInt(1).Add(potentialMaxFee, priorityFee)

@@ -20,6 +20,21 @@ type Reserve struct {
 // 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
 // }
 
+func CloneReserve(i Reserve) Reserve {
+	Reserve0 := new(big.Int).Set(i.Reserve0)
+	Reserve1 := new(big.Int).Set(i.Reserve1)
+	BlockTimestampLast := new(big.Int).Set(i.BlockTimestampLast)
+	return Reserve{Reserve0, Reserve1, BlockTimestampLast}
+}
+
+func ClonePairToReserves(pairToReserves map[Pair]Reserve) map[Pair]Reserve {
+	clone := make(map[Pair]Reserve)
+	for pair, reserve := range pairToReserves {
+		clone[pair] = CloneReserve(reserve)
+	}
+	return clone
+}
+
 func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 	var wg sync.WaitGroup
 
@@ -76,12 +91,12 @@ func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 }
 
 func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *big.Int {
-	amountInWithFee := big.NewInt(0).Mul(amountIn, big.NewInt(997))
-	numerator := big.NewInt(0).Mul(amountInWithFee, reserveOut)
-	denominator := big.NewInt(0).Mul(reserveIn, big.NewInt(1000))
+	amountInWithFee := new(big.Int).Mul(amountIn, big.NewInt(997))
+	numerator := new(big.Int).Mul(amountInWithFee, reserveOut)
+	denominator := new(big.Int).Mul(reserveIn, big.NewInt(1000))
 	denominator.Add(denominator, amountInWithFee)
 	if denominator.Sign() == 0 {
-		return big.NewInt(0)
+		return new(big.Int)
 	}
 	return numerator.Div(numerator, denominator)
 }
@@ -109,28 +124,28 @@ func SortReserves(tokenIn common.Address, pair Pair, reserve Reserve) (*big.Int,
 // https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/70366b389dca7eb0ba9a437598e2f72328a5613c/src/common.py#L229
 func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *big.Int) {
 	// 1000 * R1_ +  997 * R1
-	A := big.NewInt(0).Mul(big.NewInt(1000), R1_)
-	B := big.NewInt(0).Mul(big.NewInt(997), R1)
-	denominator := big.NewInt(0).Add(A, B)
+	A := new(big.Int).Mul(big.NewInt(1000), R1_)
+	B := new(big.Int).Mul(big.NewInt(997), R1)
+	denominator := new(big.Int).Add(A, B)
 
 	if denominator.Sign() == 0 {
-		return big.NewInt(0), big.NewInt(0)
+		return new(big.Int), new(big.Int)
 	}
 
 	var E0 *big.Int
 	{
 		// 1000 * R1_ * R0
-		numerator := big.NewInt(0).Mul(R0, R1_)
+		numerator := new(big.Int).Mul(R0, R1_)
 		numerator.Mul(numerator, big.NewInt(1000))
-		E0 = big.NewInt(0).Div(numerator, denominator)
+		E0 = new(big.Int).Div(numerator, denominator)
 	}
 
 	var E1 *big.Int
 	{
 		// 997 * R1 * R2
-		numerator := big.NewInt(0).Mul(R1, R2)
+		numerator := new(big.Int).Mul(R1, R2)
 		numerator.Mul(numerator, big.NewInt(997))
-		E1 = big.NewInt(0).Div(numerator, denominator)
+		E1 = new(big.Int).Div(numerator, denominator)
 	}
 
 	return E0, E1
@@ -140,16 +155,16 @@ func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *bi
 // https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/master/src/common.py#L171
 func GetOptimalWethIn(E0 *big.Int, E1 *big.Int) *big.Int {
 	// 1000 (sqrt(E0 * E1 * 997 / 1000) - E0)
-	A := big.NewInt(0).Mul(E0, E1)
+	A := new(big.Int).Mul(E0, E1)
 	A.Mul(A, big.NewInt(997))
 	A.Mul(A, big.NewInt(1000))
 	A.Sqrt(A)
 
-	B := big.NewInt(0).Mul(big.NewInt(1000), E0)
+	B := new(big.Int).Mul(big.NewInt(1000), E0)
 
 	numerator := A.Sub(A, B)
 	// 997
 	denominator := big.NewInt(997)
 
-	return big.NewInt(0).Div(numerator, denominator)
+	return new(big.Int).Div(numerator, denominator)
 }

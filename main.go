@@ -11,7 +11,7 @@ func main() {
 	flag.Parse()
 
 	if *arbitragePtr {
-		programs.Arbitrage()
+		programs.ArbitrageMain()
 	}
 	if *backrunPtr {
 		programs.Mempool()

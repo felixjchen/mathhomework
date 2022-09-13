@@ -4,7 +4,7 @@ import (
 	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
 	"arbitrage_go/util"
-	"fmt"
+	"math/big"
 
 	"github.com/chenzhijie/go-web3"
 	"github.com/ethereum/go-ethereum/common"
@@ -62,12 +62,11 @@ func Mempool() {
 
 	for txn := range incomingTxns {
 		// txn.to() is nil for contract creation
-		if txn.To() != nil {
+		if txn != nil && txn.To() != nil {
 			// If this is a router call
 			// TODO_LOW map here
 			if util.Contains(config.Get().UNISWAPV2_ROUTER02S, *txn.To()) {
 				txnData := txn.Data()
-				sugar.Info(txn.Hash().Hex(), " ", txn.To())
 
 				// TODO_MED set to generic router
 				router, _ := web3Http.Eth.NewContract(config.UNISWAP_ROUTER_02_ABI, txn.To().Hex())
@@ -83,23 +82,39 @@ func Mempool() {
 					args := uniswap.GetSwapExactTokensForTokensArgs(raw)
 					factory := config.Get().ROUTER02_FACTORY_MAP[*txn.To()]
 					pairMap := factoryPairMap[factory]
+					amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
 
-					// TODO_HIGH Trade is 2 hop (walletA -> Pair -> walletB)
-					if len(args.Path) == 2 {
-						amountsOut := uniswap.GetAmountsOut(pairMap, pairToReserves, args.AmountIn, args.Path)
-						fmt.Println(amountsOut)
+					// For each updated pair
+					for i := 0; i < len(args.Path)-1; i++ {
 
-						updatedPair := pairMap[args.Path[0]][args.Path[1]]
-						updatedPathes := pairToPathes[updatedPair]
+						pair := pairMap[args.Path[i]][args.Path[i+1]]
 
 						// simulate future state
-						reserve := pairToReserves[updatedPair]
+						// TODO_LOW inefficient cloning here
+						futurePairToReserves := uniswap.ClonePairToReserves(pairToReserves)
+						futureReserve := futurePairToReserves[pair]
+						if pair.Token0 == args.Path[i] {
+							futureReserve.Reserve0.Add(futureReserve.Reserve0, amountsOut[i])
+							futureReserve.Reserve1.Sub(futureReserve.Reserve1, amountsOut[i+1])
+						} else {
+							futureReserve.Reserve1.Add(futureReserve.Reserve1, amountsOut[i])
+							futureReserve.Reserve0.Sub(futureReserve.Reserve0, amountsOut[i+1])
+						}
 
-						for _, path := range updatedPathes {
-							fmt.Println(path)
+						// fmt.Println(txn.Gas(), txn.GasTipCap(), txn.GasPrice())
+						gasTipCap := new(big.Int).Set(txn.GasTipCap())
+						gasTipCap.Sub(gasTipCap, big.NewInt(1))
+						gasFeeCap := txn.GasFeeCap()
+
+						updatedPathes := pairToPathes[pair]
+						sugar.Info("Incoming: ", txn.Hash().Hex())
+						if len(updatedPathes) > 0 {
+							sugar.Info("Backrunning: ", txn.Hash().Hex())
+							for _, path := range updatedPathes {
+								Arbitrage(path, futurePairToReserves, gasTipCap, gasFeeCap)
+							}
 						}
 					}
-
 				}
 				// TODO_HIGH other funcs
 			}

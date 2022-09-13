@@ -68,7 +68,7 @@ unname functions
 // 	panic(err)
 // }
 
-// data, err := executor.EncodeABI("uniswapWeth", wethIn, big.NewInt(0), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
+// data, err := executor.EncodeABI("uniswapWeth", wethIn, new(big.Int), [2]common.Address{firstTarget, secondTarget}, [2][]byte{firstData, secondData})
 // if err != nil {
 // 	panic(err)
 // }
