@@ -3,6 +3,7 @@ package uniswap
 import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
+	"arbitrage_go/util"
 	"fmt"
 	"math/big"
 	"sync"
@@ -112,12 +113,15 @@ func GetAmountsOut(pairMap map[common.Address]map[common.Address]Pair, pairToRes
 	return amounts
 }
 
-func SortReserves(tokenIn common.Address, pair Pair, reserve Reserve) (*big.Int, *big.Int) {
-	if pair.Token0 == tokenIn {
-		return reserve.Reserve0, reserve.Reserve1
-	} else {
-		return reserve.Reserve1, reserve.Reserve0
+func GetAmountsOutCycle(pairToReserves map[Pair]Reserve, amountIn *big.Int, cycle Cycle) []*big.Int {
+	amounts := []*big.Int{amountIn}
+	for i := 0; i < len(cycle.Edges); i++ {
+		pair := cycle.Edges[i]
+		reserveIn, reserveOut := SortReserves(cycle.Tokens[i], pair, pairToReserves[pair])
+		amountOut := GetAmountOut(amounts[len(amounts)-1], reserveIn, reserveOut)
+		amounts = append(amounts, amountOut)
 	}
+	return amounts
 }
 
 // TODO_LOW: Can optimise memory
@@ -151,9 +155,27 @@ func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *bi
 	return E0, E1
 }
 
+func GetE0E1ForCycle(cycle Cycle, pairToReserves map[Pair]Reserve) (*big.Int, *big.Int) {
+	E0, E1 := new(big.Int), new(big.Int)
+	init := false
+	// E edges, E-1 virtual pools
+	for i := 0; i < len(cycle.Edges)-1; i++ {
+		if init {
+			R1_, R2 := SortReserves(cycle.Tokens[i+1], cycle.Edges[i+1], pairToReserves[cycle.Edges[i+1]])
+			E0, E1 = GetE0E1(E0, E1, R1_, R2)
+		} else {
+			R0, R1 := SortReserves(cycle.Tokens[i], cycle.Edges[i], pairToReserves[cycle.Edges[i]])
+			R1_, R2 := SortReserves(cycle.Tokens[i+1], cycle.Edges[i+1], pairToReserves[cycle.Edges[i+1]])
+			E0, E1 = GetE0E1(R0, R1, R1_, R2)
+			init = true
+		}
+	}
+	return E0, E1
+}
+
 // TODO_LOW: Can optimise memory
 // https://github.com/felixjchen/uniswap-arbitrage-analysis/blob/master/src/common.py#L171
-func GetOptimalWethIn(E0 *big.Int, E1 *big.Int) *big.Int {
+func GetOptimalAmountIn(E0 *big.Int, E1 *big.Int) *big.Int {
 	// 1000 (sqrt(E0 * E1 * 997 / 1000) - E0)
 	A := new(big.Int).Mul(E0, E1)
 	A.Mul(A, big.NewInt(997))
@@ -167,4 +189,34 @@ func GetOptimalWethIn(E0 *big.Int, E1 *big.Int) *big.Int {
 	denominator := big.NewInt(997)
 
 	return new(big.Int).Div(numerator, denominator)
+}
+
+func SortReserves(tokenIn common.Address, pair Pair, reserve Reserve) (*big.Int, *big.Int) {
+	if pair.Token0 == tokenIn {
+		return reserve.Reserve0, reserve.Reserve1
+	} else {
+		return reserve.Reserve1, reserve.Reserve0
+	}
+}
+
+func GetCycleAmountsOut(cycle Cycle, amountsOut []*big.Int) ([]*big.Int, []*big.Int) {
+	amounts0Out := []*big.Int{}
+	amounts1Out := []*big.Int{}
+	// A -> B -> C -> A
+	//   b_   c_   a_
+	for i, amountOut := range amountsOut[1:] {
+		amount0Out := util.Ternary(cycle.Edges[i].Token0 == cycle.Tokens[i+1], amountOut, big.NewInt(0))
+		amount1Out := util.Ternary(cycle.Edges[i].Token1 == cycle.Tokens[i+1], amountOut, big.NewInt(0))
+		amounts0Out = append(amounts0Out, amount0Out)
+		amounts1Out = append(amounts1Out, amount1Out)
+	}
+	return amounts0Out, amounts1Out
+}
+
+func GetCycleTargets(cycle Cycle) []common.Address {
+	res := []common.Address{}
+	for _, pair := range cycle.Edges {
+		res = append(res, pair.Address)
+	}
+	return res
 }

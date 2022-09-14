@@ -101,16 +101,19 @@ func Mempool() {
 							futureReserve.Reserve0.Sub(futureReserve.Reserve0, amountsOut[i+1])
 						}
 
-						// fmt.Println(txn.Gas(), txn.GasTipCap(), txn.GasPrice())
 						gasTipCap := new(big.Int).Set(txn.GasTipCap())
 						gasTipCap.Sub(gasTipCap, big.NewInt(1))
 						gasFeeCap := txn.GasFeeCap()
 
 						updatedPathes := pairToPathes[pair]
-						sugar.Info("Incoming: ", txn.Hash().Hex())
+						sugar.Info("Incoming: ", txn.Hash().Hex(), " to: ", txn.To().Hex())
 						if len(updatedPathes) > 0 {
-							sugar.Info("Backrunning: ", txn.Hash().Hex())
 							for _, path := range updatedPathes {
+								// sugar.Info("Backrunning: ", txn.Hash().Hex())
+								// sugar.Info("Pair: ", pair.Address)
+								// sugar.Info("AmountsOut: ", amountsOut)
+								// sugar.Info("Previous: ", pairToReserves[pair])
+								// sugar.Info("Future: ", futurePairToReserves[pair])
 								Arbitrage(path, futurePairToReserves, gasTipCap, gasFeeCap)
 							}
 						}

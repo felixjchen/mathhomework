@@ -40,66 +40,173 @@ const UNISWAP_FLASH_QUERY_ABI = `[{
   "type": "function"
 }]`
 
-const BUNDLE_EXECTOR_ABI = `[{
-	"inputs": [
-		{
-			"internalType": "uint256",
-			"name": "wethIn",
-			"type": "uint256"
-		},
-		{
-			"internalType": "address[]",
-			"name": "targets",
-			"type": "address[]"
-		},
-		{
-			"internalType": "uint256[]",
-			"name": "amount0Outs",
-			"type": "uint256[]"
-		},
-		{
-			"internalType": "uint256[]",
-			"name": "amount1Outs",
-			"type": "uint256[]"
-		}
-	],
-	"name": "twohop",
-	"outputs": [],
-	"stateMutability": "payable",
-	"type": "function"
-},{
-  "inputs": [{
-    "internalType": "address payable",
-    "name": "_to",
-    "type": "address"
-  }, {"internalType": "uint256", "name": "_value", "type": "uint256"}, {
-    "internalType": "bytes",
-    "name": "_data",
-    "type": "bytes"
-  }],
-  "name": "call",
-  "outputs": [{"internalType": "bytes", "name": "", "type": "bytes"}],
-  "stateMutability": "payable",
-  "type": "function"
-}, {
-  "inputs": [{"internalType": "address", "name": "_executor", "type": "address"}],
-  "stateMutability": "payable",
-  "type": "constructor"
-}, {
-  "inputs": [{
-    "internalType": "uint256",
-    "name": "_wethAmountToFirstMarket",
-    "type": "uint256"
-  }, {"internalType": "uint256", "name": "_ethAmountToCoinbase", "type": "uint256"}, {
-    "internalType": "address[]",
-    "name": "_targets",
-    "type": "address[]"
-  }, {"internalType": "bytes[]", "name": "_payloads", "type": "bytes[]"}],
-  "name": "uniswapWeth",
-  "outputs": [],
-  "stateMutability": "payable",
-  "type": "function"
-}, {"stateMutability": "payable", "type": "receive"}]`
+const BUNDLE_EXECTOR_ABI = `[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_executor",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_data",
+        "type": "bytes"
+      }
+    ],
+    "name": "call",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_targets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_amounts0Out",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_amounts1Out",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "hoppity",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setWeth",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "sweepERC20",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "wethIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "targets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amount0Outs",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amount1Outs",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "twohop",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_wethAmountToFirstMarket",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_ethAmountToCoinbase",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_targets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "_payloads",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "uniswapWeth",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]
+`
 
 const PAIR_ABI = `[{
   "inputs": [],

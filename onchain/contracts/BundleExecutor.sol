@@ -93,6 +93,38 @@ contract FlashBotsMultiCall {
         token.transfer(_to, _amount);
     }
 
+    function hoppity(
+        uint256 _amountIn,
+        address[] calldata _targets,
+        uint256[] calldata _amounts0Out,
+        uint256[] calldata _amounts1Out
+    ) external payable onlyExecutor {
+        uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
+
+        bool success = WETH.transfer(_targets[0], _amountIn);
+        require(success, "first weth fail");
+        uint256 n = _targets.length;
+        for (uint256 i = 0; i < n - 1; i++) {
+            IUniswapV2Pair(_targets[i]).swap(
+                _amounts0Out[i],
+                _amounts1Out[i],
+                _targets[i + 1],
+                ""
+            );
+        }
+        IUniswapV2Pair(_targets[n - 1]).swap(
+            _amounts0Out[n - 1],
+            _amounts1Out[n - 1],
+            address(this),
+            ""
+        );
+        uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
+        require(
+            _wethBalanceAfter > _wethBalanceBefore,
+            "reverted non profitable"
+        );
+    }
+
     function twohop(
         uint256 wethIn,
         address[] calldata targets,

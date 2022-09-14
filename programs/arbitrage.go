@@ -41,7 +41,14 @@ func ArbitrageMain() {
 	// Simulate path
 	// TODO_MED adjust gas
 	web3 := blockchain.GetWeb3()
+	i := 0
 	for _, path := range pathes {
+		i++
+		if (i % 100) == 0 {
+			pairToReserves = uniswap.GetReservesForPairs(wethPairs)
+			sugar.Info("Updated ", len(wethPairs), " Reserves")
+		}
+
 		Arbitrage(path, pairToReserves,
 			web3.Utils.ToGWei(40),
 			web3.Utils.ToGWei(325))
@@ -60,21 +67,18 @@ func Arbitrage(path [2]uniswap.Pair, pairToReserves map[uniswap.Pair]uniswap.Res
 
 	intermediateToken := util.Ternary(path[0].Token0 != weth, path[0].Token0, path[0].Token1)
 
-	R0 := util.Ternary(path[0].Token0 == weth, pairToReserves[path[0]].Reserve0, pairToReserves[path[0]].Reserve1)
-	R1 := util.Ternary(path[0].Token0 == intermediateToken, pairToReserves[path[0]].Reserve0, pairToReserves[path[0]].Reserve1)
-
-	R1_ := util.Ternary(path[1].Token0 == intermediateToken, pairToReserves[path[1]].Reserve0, pairToReserves[path[1]].Reserve1)
-	R2 := util.Ternary(path[1].Token0 == weth, pairToReserves[path[1]].Reserve0, pairToReserves[path[1]].Reserve1)
+	R0, R1 := uniswap.SortReserves(weth, path[0], pairToReserves[path[0]])
+	R1_, R2 := uniswap.SortReserves(intermediateToken, path[1], pairToReserves[path[1]])
 
 	E0, E1 := uniswap.GetE0E1(R0, R1, R1_, R2)
 
 	if new(big.Int).Sub(E0, E1).Sign() == -1 {
 
-		wethIn := uniswap.GetOptimalWethIn(E0, E1)
+		wethIn := uniswap.GetOptimalAmountIn(E0, E1)
 
 		// Min on current balance
-		if big.NewInt(0).Sub(wethIn, big.NewInt(20000000000000000)).Sign() == 1 {
-			wethIn = big.NewInt(20000000000000000)
+		if big.NewInt(0).Sub(wethIn, big.NewInt(870000000000000000)).Sign() == 1 {
+			wethIn = big.NewInt(870000000000000000)
 		}
 
 		if wethIn.Sign() == 1 {
@@ -117,8 +121,6 @@ func Arbitrage(path [2]uniswap.Pair, pairToReserves map[uniswap.Pair]uniswap.Res
 				}
 				secondTarget := common.Address(path[1].Address)
 
-				// fmt.Println(wethIn, [2]common.Address{firstTarget, secondTarget}, []*big.Int{amount0OutFirst, amount0OutSecond}, []*big.Int{amount1OutFirst, amount1OutSecond})
-
 				// run bundle
 				executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
 				if err != nil {
@@ -138,21 +140,23 @@ func Arbitrage(path [2]uniswap.Pair, pairToReserves map[uniswap.Pair]uniswap.Res
 				gasLimit, err := web3.Eth.EstimateGas(call)
 				if err != nil {
 					sugar.Error(err)
+					// if strings.Contains(fmt.Sprint(err), "-32000") {
+					// 	panic(2)
+					// }
 				} else {
 					sugar.Info("Estimate gas limit %v\n", gasLimit)
 
-					gasGweiCap := new(big.Int).Mul(big.NewInt(150000), gasFeeCap)
-					netProfit := new(big.Int).Sub(arbProfit, gasGweiCap)
+					// 0.006 ether
+					gasGweiPrediction := big.NewInt(6000000000000000)
+					netProfit := new(big.Int).Sub(arbProfit, gasGweiPrediction)
 
 					sugar.Info("Estimated Profit ", path, arbProfit, " SUB GAS ", netProfit)
-
-					if true {
-
+					if netProfit.Sign() == 1 {
 						// TODO not sync
 						tx, err := web3.Eth.SyncSendEIP1559RawTransaction(
 							executor.Address(),
 							new(big.Int),
-							gasLimit+10000,
+							160000,
 							gasTipCap,
 							gasFeeCap,
 							data,
@@ -163,9 +167,7 @@ func Arbitrage(path [2]uniswap.Pair, pairToReserves map[uniswap.Pair]uniswap.Res
 						if err == nil {
 							sugar.Info("tx hash %v\n", tx.TxHash)
 						}
-						panic(1)
 					}
-
 				}
 			}
 		}
