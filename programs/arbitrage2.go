@@ -60,7 +60,7 @@ func Arbitrage2Main() {
 
 				if arbProfit.Sign() == 1 {
 					targets := uniswap.GetCycleTargets(cycle)
-					amounts0Out, amounts1Out := uniswap.GetCycleAmountsOut(cycle, amountsOut)
+					cycleAmountsOut := uniswap.GetCycleAmountsOut(cycle, amountsOut)
 
 					// run bundle
 					executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
@@ -70,7 +70,7 @@ func Arbitrage2Main() {
 					// fmt.Println(cycle, amountsOut)
 					// fmt.Println(amountIn, targets, amounts0Out, amounts1Out)
 
-					data, err := executor.EncodeABI("hoppity", amountIn, targets, amounts0Out, amounts1Out)
+					data, err := executor.EncodeABI("hoppity", amountIn, targets, cycleAmountsOut)
 					if err != nil {
 						panic(err)
 					}

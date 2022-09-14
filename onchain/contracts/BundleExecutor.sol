@@ -96,8 +96,7 @@ contract FlashBotsMultiCall {
     function hoppity(
         uint256 _amountIn,
         address[] calldata _targets,
-        uint256[] calldata _amounts0Out,
-        uint256[] calldata _amounts1Out
+        uint256[2][] calldata _amountsOut
     ) external payable onlyExecutor {
         uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
 
@@ -106,43 +105,15 @@ contract FlashBotsMultiCall {
         uint256 n = _targets.length;
         for (uint256 i = 0; i < n - 1; i++) {
             IUniswapV2Pair(_targets[i]).swap(
-                _amounts0Out[i],
-                _amounts1Out[i],
+                _amountsOut[i][0],
+                _amountsOut[i][1],
                 _targets[i + 1],
                 ""
             );
         }
         IUniswapV2Pair(_targets[n - 1]).swap(
-            _amounts0Out[n - 1],
-            _amounts1Out[n - 1],
-            address(this),
-            ""
-        );
-        uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(
-            _wethBalanceAfter > _wethBalanceBefore,
-            "reverted non profitable"
-        );
-    }
-
-    function twohop(
-        uint256 wethIn,
-        address[] calldata targets,
-        uint256[] calldata amount0Outs,
-        uint256[] calldata amount1Outs
-    ) external payable onlyExecutor {
-        uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
-        bool success = WETH.transfer(targets[0], wethIn);
-        require(success, "first weth fail");
-        IUniswapV2Pair(targets[0]).swap(
-            amount0Outs[0],
-            amount1Outs[0],
-            targets[1],
-            ""
-        );
-        IUniswapV2Pair(targets[1]).swap(
-            amount0Outs[1],
-            amount1Outs[1],
+            _amountsOut[n - 1][0],
+            _amountsOut[n - 1][1],
             address(this),
             ""
         );

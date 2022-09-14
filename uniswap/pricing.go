@@ -199,18 +199,16 @@ func SortReserves(tokenIn common.Address, pair Pair, reserve Reserve) (*big.Int,
 	}
 }
 
-func GetCycleAmountsOut(cycle Cycle, amountsOut []*big.Int) ([]*big.Int, []*big.Int) {
-	amounts0Out := []*big.Int{}
-	amounts1Out := []*big.Int{}
+func GetCycleAmountsOut(cycle Cycle, amountsOut []*big.Int) [][2]*big.Int {
+	res := [][2]*big.Int{}
 	// A -> B -> C -> A
 	//   b_   c_   a_
 	for i, amountOut := range amountsOut[1:] {
 		amount0Out := util.Ternary(cycle.Edges[i].Token0 == cycle.Tokens[i+1], amountOut, big.NewInt(0))
 		amount1Out := util.Ternary(cycle.Edges[i].Token1 == cycle.Tokens[i+1], amountOut, big.NewInt(0))
-		amounts0Out = append(amounts0Out, amount0Out)
-		amounts1Out = append(amounts1Out, amount1Out)
+		res = append(res, [2]*big.Int{amount0Out, amount1Out})
 	}
-	return amounts0Out, amounts1Out
+	return res
 }
 
 func GetCycleTargets(cycle Cycle) []common.Address {

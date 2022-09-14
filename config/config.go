@@ -97,7 +97,7 @@ func Get() *Config {
 				WETH_ADDRESS := common.HexToAddress("0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889") //  Mumbai
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x8ac54e383B37CdcB1176B1FE2f88bC385ecDDBeF")     // Mumbai
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x73D54F010D0ebC559f913BB191ae04f51bE3aD8F") // Mumbai
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0xDdF1b141af0B740Eeaab45BCB9D29599ab756EA2") // Mumbai
 
 				QUICKSWAP_FACTORY_ADDRESS := common.HexToAddress("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32") // Mumbai and Polygon
 				SUSHISWAP_FACTORY_ADDRESS := common.HexToAddress("0xc35DADB65012eC5796536bD9864eD8773aBc74C4") // Mumbai and Polygon

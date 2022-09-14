@@ -52,14 +52,9 @@
         "type": "address[]"
       },
       {
-        "internalType": "uint256[]",
-        "name": "_amounts0Out",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "_amounts1Out",
-        "type": "uint256[]"
+        "internalType": "uint256[2][]",
+        "name": "_amountsOut",
+        "type": "uint256[2][]"
       }
     ],
     "name": "hoppity",
@@ -101,34 +96,6 @@
     "name": "sweepERC20",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "wethIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "targets",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "amount0Outs",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "amount1Outs",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "twohop",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
