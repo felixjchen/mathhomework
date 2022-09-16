@@ -17,40 +17,52 @@ import (
 	"go.uber.org/zap"
 )
 
-type NonceCounter struct {
-	nonce uint64
+type TSCounter struct {
+	count uint64
 	mu    *sync.Mutex
 }
 
-func NewNonceCounter() *NonceCounter {
-	web3 := blockchain.GetWeb3()
-	nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &NonceCounter{
-		nonce: nonce,
+func NewTSCounter(i uint64) *TSCounter {
+	return &TSCounter{
+		count: i,
 		mu:    &sync.Mutex{},
 	}
 }
 
-func (n *NonceCounter) Get() uint64 {
-	nonce := n.nonce
-	return nonce
+func (n *TSCounter) Get() uint64 {
+	return n.count
 }
 
-func (n *NonceCounter) Inc() {
-	n.nonce++
+func (n *TSCounter) Inc() {
+	n.count++
 }
 
-func (n *NonceCounter) Dec() {
-	n.nonce--
+func (n *TSCounter) Dec() {
+	n.count--
 }
 
-func (n *NonceCounter) Lock() {
+func (n *TSCounter) TSGet() uint64 {
+	n.Lock()
+	defer n.Unlock()
+	return n.count
+}
+
+func (n *TSCounter) TSInc() {
+	n.Lock()
+	defer n.Unlock()
+	n.count++
+}
+
+func (n *TSCounter) TSDec() {
+	n.Lock()
+	defer n.Unlock()
+	n.count--
+}
+
+func (n *TSCounter) Lock() {
 	n.mu.Lock()
 }
-func (n *NonceCounter) Unlock() {
+func (n *TSCounter) Unlock() {
 	n.mu.Unlock()
 }
 
@@ -75,19 +87,18 @@ func Arbitrage2Main() {
 	}
 	sugar.Info("Created Graph")
 
-	pairToReserves := uniswap.GetReservesForPairs(allPairs)
-	sugar.Info("Updated ", len(allPairs), " Reserves")
-
 	executeChan := make(chan uniswap.Cycle)
 	checkChan := make(chan uniswap.Cycle)
 
 	go func() {
 		for {
-			uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 4, checkChan)
+			uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 3, checkChan)
 			sugar.Info("RESTARTING CYCLES")
 		}
 	}()
 
+	pairToReserves := uniswap.GetReservesForPairs(allPairs)
+	sugar.Info("Updated ", len(allPairs), " Reserves")
 	mu := sync.Mutex{}
 	go func() {
 		lastUpdate := time.Now()
@@ -109,9 +120,14 @@ func Arbitrage2Main() {
 	}()
 
 	go func() {
-		nonceCounter := NewNonceCounter()
+		web3 := blockchain.GetWeb3()
+		nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		nounceCounter := NewTSCounter(nonce)
 		for cycle := range executeChan {
-			ExecuteCycle(cycle, nonceCounter)
+			ExecuteCycle(cycle, nounceCounter)
 		}
 	}()
 
@@ -145,9 +161,12 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 
 	if new(big.Int).Sub(E0, E1).Sign() == -1 {
 		amountIn := uniswap.GetOptimalAmountIn(E0, E1)
+
 		// Min on current balance
-		if big.NewInt(0).Sub(amountIn, big.NewInt(960000000000000000)).Sign() == 1 {
-			amountIn = big.NewInt(960000000000000000)
+		if config.PROD {
+			if big.NewInt(0).Sub(amountIn, big.NewInt(960000000000000000)).Sign() == 1 {
+				amountIn = big.NewInt(960000000000000000)
+			}
 		}
 
 		if amountIn.Sign() == 1 {
@@ -181,6 +200,7 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 					// 0.01 ether
 					gasGweiPrediction := big.NewInt(10000000000000000)
 					netProfit := new(big.Int).Sub(arbProfit, gasGweiPrediction)
+					fmt.Println("Estimated Profit ", cycle, arbProfit, " SUB GAS ", netProfit)
 
 					if netProfit.Sign() == 1 {
 						executeChan <- cycle
@@ -192,7 +212,7 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 
 }
 
-func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *NonceCounter) {
+func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *TSCounter) {
 	// fmt.Println(cycle)
 	pairToReserves := uniswap.GetReservesForPairs(cycle.Edges)
 

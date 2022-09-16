@@ -14,44 +14,46 @@ import (
 )
 
 func ArbitrageMain() {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Fatal(err)
-	}
-	sugar := logger.Sugar()
-
-	allPairs := uniswap.GetAllPairsArray()
-	sugar.Info("Got ", len(allPairs), " pairs")
-
-	wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
-	pairToReserves := uniswap.GetReservesForPairs(wethPairs)
-	sugar.Info("Updated ", len(wethPairs), " Reserves")
-
-	// adjacency list
-	tokensToPairs := make(map[common.Address][]uniswap.Pair)
-	for _, pair := range allPairs {
-		tokensToPairs[pair.Token0] = append(tokensToPairs[pair.Token0], pair)
-		tokensToPairs[pair.Token1] = append(tokensToPairs[pair.Token1], pair)
-	}
-	sugar.Info("Created Graph")
-
-	pathes := uniswap.GetTwoHops(tokensToPairs)
-	sugar.Info("Found ", len(pathes), " 2-hops")
-
-	// Simulate path
-	// TODO_MED adjust gas
-	web3 := blockchain.GetWeb3()
-	i := 0
-	for _, path := range pathes {
-		i++
-		if (i % 100) == 0 {
-			pairToReserves = uniswap.GetReservesForPairs(wethPairs)
-			sugar.Info("Updated ", len(wethPairs), " Reserves")
+	for {
+		logger, err := zap.NewProduction()
+		if err != nil {
+			log.Fatal(err)
 		}
+		sugar := logger.Sugar()
 
-		Arbitrage(path, pairToReserves,
-			web3.Utils.ToGWei(40),
-			web3.Utils.ToGWei(325))
+		allPairs := uniswap.GetAllPairsArray()
+		sugar.Info("Got ", len(allPairs), " pairs")
+
+		wethPairs := uniswap.FilterPairs(uniswap.WethFilter, allPairs)
+		pairToReserves := uniswap.GetReservesForPairs(wethPairs)
+		sugar.Info("Updated ", len(wethPairs), " Reserves")
+
+		// adjacency list
+		tokensToPairs := make(map[common.Address][]uniswap.Pair)
+		for _, pair := range allPairs {
+			tokensToPairs[pair.Token0] = append(tokensToPairs[pair.Token0], pair)
+			tokensToPairs[pair.Token1] = append(tokensToPairs[pair.Token1], pair)
+		}
+		sugar.Info("Created Graph")
+
+		pathes := uniswap.GetTwoHops(tokensToPairs)
+		sugar.Info("Found ", len(pathes), " 2-hops")
+
+		// Simulate path
+		// TODO_MED adjust gas
+		web3 := blockchain.GetWeb3()
+		i := 0
+		for _, path := range pathes {
+			i++
+			if (i % 100) == 0 {
+				pairToReserves = uniswap.GetReservesForPairs(wethPairs)
+				sugar.Info("Updated ", len(wethPairs), " Reserves")
+			}
+
+			Arbitrage(path, pairToReserves,
+				web3.Utils.ToGWei(40),
+				web3.Utils.ToGWei(325))
+		}
 	}
 }
 
