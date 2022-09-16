@@ -4,9 +4,9 @@ import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
 	"arbitrage_go/util"
-	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -66,12 +66,14 @@ func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 				panic(err)
 			}
 			res, err := contract.Call("getReservesByPairs", poolAddresses[start:end])
-			if err != nil {
-				panic(err)
+			for err != nil {
+				time.Sleep(time.Second)
+				// fmt.Println("retrying getReservesByPairs, got", res)
+				res, err = contract.Call("getReservesByPairs", poolAddresses[start:end])
 			}
 			reserveTuples, ok := res.([][3]*big.Int)
 			if !ok {
-				fmt.Println("can not convert reserve")
+				panic("can not convert reserve")
 			}
 			// Create structs TODO MAP this
 			reservesToAdd := []Reserve{}

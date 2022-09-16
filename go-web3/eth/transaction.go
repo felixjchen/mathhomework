@@ -270,3 +270,38 @@ func (e *Eth) SyncSendEIP1559RawTransaction(
 			"please make sure your transaction was properly sent. Be aware that it might still be mined!", e.txPollTimeout)
 	}
 }
+
+func (e *Eth) SendRawEIP1559TransactionWithNonce(
+	nonce uint64,
+	to common.Address,
+	amount *big.Int,
+	gasLimit uint64,
+	gasTipCap *big.Int,
+	gasFeeCap *big.Int,
+	data []byte,
+) (common.Hash, error) {
+	var hash common.Hash
+	dynamicFeeTx := &eTypes.DynamicFeeTx{
+		Nonce:     nonce,
+		GasTipCap: gasTipCap,
+		GasFeeCap: gasFeeCap,
+		Gas:       gasLimit,
+		To:        &to,
+		Value:     amount,
+		Data:      data,
+	}
+
+	signedTx, err := eTypes.SignNewTx(e.privateKey, eTypes.LatestSignerForChainID(e.chainId), dynamicFeeTx)
+	if err != nil {
+		return hash, err
+	}
+
+	txData, err := signedTx.MarshalBinary()
+	if err != nil {
+		return hash, err
+	}
+
+	err = e.c.Call("eth_sendRawTransaction", &hash, hexutil.Encode(txData))
+
+	return hash, err
+}

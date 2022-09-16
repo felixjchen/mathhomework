@@ -56,8 +56,8 @@ func Get() *Config {
 			if PROD {
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://nd-731-983-709.p2pify.com/afd324c015493aaecfae41de06d77b0e"
-				RPC_URL_WS := "wss://ws-nd-731-983-709.p2pify.com/afd324c015493aaecfae41de06d77b0e"
+				RPC_URL_HTTP := "https://nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
+				RPC_URL_WS := "wss://ws-nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
 				CHAIN_ID := int64(137)
 
 				WETH_ADDRESS := common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270") //  Polygon

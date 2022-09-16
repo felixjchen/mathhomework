@@ -3,8 +3,9 @@ package uniswap
 import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
-	"fmt"
 	"math/big"
+	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -27,6 +28,8 @@ type Pair struct {
 
 func GetAllPairsForFactory(factory common.Address) []Pair {
 	allPairs := []Pair{}
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
 
 	web3 := blockchain.GetWeb3()
 	contract, err := web3.Eth.NewContract(config.UNISWAP_FLASH_QUERY_ABI, config.Get().FLASH_QUERY_ADDRESS.Hex())
@@ -37,19 +40,30 @@ func GetAllPairsForFactory(factory common.Address) []Pair {
 	allPairsLength, _ := allPairsLengthInterface.(*big.Int)
 
 	for i := int64(0); i < allPairsLength.Int64(); i += STEP_SIZE {
-		slice, _ := contract.Call("getPairsByIndexRange", factory, big.NewInt(i), big.NewInt(i+STEP_SIZE))
-		// Just casted from interface{} to [][3] Address
-		castedSlice, ok := slice.([][3]common.Address)
-		if !ok {
-			fmt.Println("can not convert pool")
-		}
-		// TODO_LOW Create structs map this
-		pairsToAdd := []Pair{}
-		for _, arr := range castedSlice {
-			pairsToAdd = append(pairsToAdd, Pair{Token0: arr[0], Token1: arr[1], Address: arr[2]})
-		}
-		allPairs = append(allPairs, pairsToAdd...)
+		wg.Add(1)
+		go func(i int64) {
+			defer wg.Done()
+			slice, _ := contract.Call("getPairsByIndexRange", factory, big.NewInt(i), big.NewInt(i+STEP_SIZE))
+			// Just casted from interface{} to [][3] Address
+			castedSlice, ok := slice.([][3]common.Address)
+			for !ok {
+				time.Sleep(time.Second)
+				// fmt.Println("retrying getPairsByIndexRange, got", slice)
+				slice, _ = contract.Call("getPairsByIndexRange", factory, big.NewInt(i), big.NewInt(i+STEP_SIZE))
+				castedSlice, ok = slice.([][3]common.Address)
+			}
+			// TODO_LOW Create structs map this
+			pairsToAdd := []Pair{}
+			for _, arr := range castedSlice {
+				pairsToAdd = append(pairsToAdd, Pair{Token0: arr[0], Token1: arr[1], Address: arr[2]})
+			}
+			mu.Lock()
+			allPairs = append(allPairs, pairsToAdd...)
+			mu.Unlock()
+		}(i)
 	}
+
+	wg.Wait()
 
 	allPairs = FilterPairs(TokenBlacklistFilter, allPairs)
 	return allPairs
@@ -67,9 +81,6 @@ func GetFactoryPairMap() map[common.Address]map[common.Address]map[common.Addres
 			factoryPairMap[factory][pair.Token0] = make(map[common.Address]Pair)
 			factoryPairMap[factory][pair.Token1] = make(map[common.Address]Pair)
 		}
-	}
-	for _, factory := range config.Get().UNISWAPV2_FACTORIES {
-		pairs := GetAllPairsForFactory(factory)
 		for _, pair := range pairs {
 			// TODO_LOW suboptimal here
 			factoryPairMap[factory][pair.Token0][pair.Token1] = pair

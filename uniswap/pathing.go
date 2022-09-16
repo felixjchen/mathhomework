@@ -3,6 +3,7 @@ package uniswap
 import (
 	"arbitrage_go/config"
 	"arbitrage_go/util"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -34,45 +35,52 @@ type Cycle struct {
 	Edges  []Pair
 }
 
-// func dfs(candidate Cycle, pairGraph map[Pair][]common.Address, maxPathLength int, visited map[common.Address]bool, cycles *[]Cycle) {
-// 	head := candidate.Edges[len(candidate.Edges)-1]
+func dfs(candidate *Cycle, graph *map[common.Address][]Pair, maxPathLength int, cycles *[]Cycle, wg *sync.WaitGroup, mu *sync.Mutex) {
+	defer wg.Done()
 
-// 	if _, exist := visited[head.Address]; !exist {
-// 		visited[head.Address] = true
+	n := len(candidate.Tokens)
+	head := candidate.Tokens[n-1]
+	isCycle := candidate.Tokens[0] == candidate.Tokens[n-1] && 2 < n
+	if isCycle {
+		mu.Lock()
+		*cycles = append(*cycles, *candidate)
+		mu.Unlock()
+	} else {
+		if n-1 < maxPathLength {
+			for _, pair := range (*graph)[head] {
+				// No reusing edges
+				if !util.Contains(candidate.Edges, pair) {
+					_, newHead := SortTokens(head, pair)
+					newTokens := append([]common.Address{}, candidate.Tokens...)
+					newEdges := append([]Pair{}, candidate.Edges...)
+					newTokens = append(newTokens, newHead)
+					newEdges = append(newEdges, pair)
+					newCandidate := Cycle{newTokens, newEdges}
+					wg.Add(1)
+					go dfs(&newCandidate, graph, maxPathLength, cycles, wg, mu)
+				}
+			}
+		}
+	}
+}
 
-// 		isCycle := candidate.Tokens[0] == candidate.Tokens[len(candidate.Tokens)-1]
-// 		if isCycle {
-// 			*cycles = append(*cycles, candidate)
-// 		} else {
-// 			if len(candidate.Edges) < maxPathLength {
-// 			}
-// 		}
-// 	}
-// }
+// Pairs are nodes
+func GetCycles2(start common.Address, graph map[common.Address][]Pair, maxPathLength int) []Cycle {
 
-// // Pairs are nodes
-// // Tokens are edges
-// func GetCycles2(start common.Address, pairGraph map[Pair][]common.Address, graph map[common.Address][]Pair, maxPathLength int) []Cycle {
-// 	cycles := []Cycle{}
-// 	visited := make(map[common.Address]bool)
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
 
-// 	// muCycles := sync.Mutex{}
-// 	// muVisited := sync.Mutex{}
-// 	// wg := sync.WaitGroup{}
-
-// 	for _, pair := range graph[start] {
-// 		_, second := SortTokens(start, pair)
-// 		initialCandidate := Cycle{[]common.Address{start, second}, []Pair{pair}}
-// 		dfs(initialCandidate, pairGraph, maxPathLength-1, visited, &cycles)
-// 	}
-
-// 	return cycles
-// }
-
-func GetCycles(start common.Address, graph map[common.Address][]Pair, maxPathLength int) []Cycle {
 	cycles := []Cycle{}
 
-	// dfs this needs rework
+	initialCandidate := Cycle{[]common.Address{start}, []Pair{}}
+	wg.Add(1)
+	go dfs(&initialCandidate, &graph, maxPathLength, &cycles, &wg, &mu)
+	wg.Wait()
+	return cycles
+}
+
+func GetCycles(start common.Address, graph map[common.Address][]Pair, maxPathLength int, checkChan chan Cycle) {
+	// dfs
 	stack := []Cycle{}
 	stack = append(stack, Cycle{[]common.Address{start}, []Pair{}})
 	for len(stack) > 0 {
@@ -82,29 +90,23 @@ func GetCycles(start common.Address, graph map[common.Address][]Pair, maxPathLen
 
 		head := candidate.Tokens[len(candidate.Tokens)-1]
 		if start == head && len(candidate.Edges) > 0 {
-			cycles = append(cycles, candidate)
+			checkChan <- candidate
 		} else {
 			// keep going
 			if len(candidate.Edges) < maxPathLength {
-				usedEdges := make(map[Pair]bool)
-				for _, pair := range candidate.Edges {
-					usedEdges[pair] = true
-				}
 				for _, pair := range graph[head] {
 					// No reusing edges
-					if _, exist := usedEdges[pair]; !exist {
-						newCandidate := Cycle{candidate.Tokens[:], candidate.Edges[:]}
+					if !util.Contains(candidate.Edges, pair) {
 						_, newHead := SortTokens(head, pair)
-						newCandidate.Tokens = append(newCandidate.Tokens, newHead)
-						newCandidate.Edges = append(newCandidate.Edges, pair)
+						newTokens := append(append([]common.Address{}, candidate.Tokens...), newHead)
+						newEdges := append(append([]Pair{}, candidate.Edges...), pair)
+						newCandidate := Cycle{newTokens, newEdges}
 						stack = append(stack, newCandidate)
 					}
 				}
 			}
 		}
 	}
-
-	return cycles
 }
 
 func SortTokens(start common.Address, pair Pair) (common.Address, common.Address) {

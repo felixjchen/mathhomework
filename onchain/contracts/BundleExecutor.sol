@@ -59,7 +59,7 @@ contract FlashBotsMultiCall {
     address private immutable executor;
 
     // TODO IDK
-    IWETH private WETH = IWETH(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
+    IWETH public WETH = IWETH(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
 
     modifier onlyExecutor() {
         require(msg.sender == executor, "Only executor");
@@ -118,10 +118,7 @@ contract FlashBotsMultiCall {
             ""
         );
         uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(
-            _wethBalanceAfter > _wethBalanceBefore,
-            "reverted non profitable"
-        );
+        require(_wethBalanceAfter > _wethBalanceBefore, "not profitable");
     }
 
     function uniswapWeth(
