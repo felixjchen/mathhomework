@@ -89,6 +89,8 @@ func Arbitrage2Main() {
 
 	executeChan := make(chan uniswap.Cycle)
 	checkChan := make(chan uniswap.Cycle)
+	executeCounter := NewTSCounter(0)
+	checkCounter := NewTSCounter(0)
 
 	go func() {
 		for {
@@ -97,25 +99,44 @@ func Arbitrage2Main() {
 		}
 	}()
 
+	pairToReservesMu := sync.Mutex{}
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
 	sugar.Info("Updated ", len(allPairs), " Reserves")
-	mu := sync.Mutex{}
+	relaventPairs := []uniswap.Pair{}
+	relaventPairsMap := make(map[uniswap.Pair]bool)
+	relaventPairsMu := sync.Mutex{}
 	go func() {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2.3 {
-				temp := uniswap.GetReservesForPairs(allPairs)
-				mu.Lock()
-				pairToReserves = temp
-				mu.Unlock()
-				sugar.Info("Updated ", len(allPairs), " Reserves Live")
+				relaventPairsMu.Lock()
+				temp := uniswap.GetReservesForPairs(relaventPairs)
+				relaventPairsMu.Unlock()
+				pairToReservesMu.Lock()
+				for pair, reserve := range temp {
+					pairToReserves[pair] = reserve
+				}
+				pairToReservesMu.Unlock()
+				sugar.Info("Updated ", len(temp), " Relavent Reserves")
+				lastUpdate = time.Now()
+
 			}
 		}
 	}()
 
 	go func() {
 		for cycle := range checkChan {
-			go CheckCycle(cycle, &pairToReserves, executeChan, &mu)
+			go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu)
+			checkCounter.TSInc()
+			relaventPairsMu.Lock()
+			for _, pair := range cycle.Edges {
+				_, exist := relaventPairsMap[pair]
+				if !exist {
+					relaventPairsMap[pair] = true
+					relaventPairs = append(relaventPairs, pair)
+				}
+			}
+			relaventPairsMu.Unlock()
 		}
 	}()
 
@@ -128,22 +149,16 @@ func Arbitrage2Main() {
 		nounceCounter := NewTSCounter(nonce)
 		for cycle := range executeChan {
 			ExecuteCycle(cycle, nounceCounter)
+			executeCounter.TSInc()
 		}
 	}()
 
-	// go func(liveChecks *int, liveExecutes *int) {
-	// 	for {
-	// 		time.Sleep(5 * time.Second)
-	// 		fmt.Println(*liveChecks, *liveExecutes)
-	// 	}
-	// }(&liveChecks, &liveExecutes)
-
-	// go func() {
-	// 	for {
-	// 		time.Sleep(3 * time.Second)
-	// 		sugar.Info("Check Q:", len(checkChan), " Execute Q:", len(executeChan))
-	// 	}
-	// }()
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			sugar.Info("Check:", checkCounter.TSGet(), " Execute:", executeCounter.TSGet())
+		}
+	}()
 
 }
 
@@ -200,7 +215,6 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 					// 0.01 ether
 					gasGweiPrediction := big.NewInt(10000000000000000)
 					netProfit := new(big.Int).Sub(arbProfit, gasGweiPrediction)
-					fmt.Println("Estimated Profit ", cycle, arbProfit, " SUB GAS ", netProfit)
 
 					if netProfit.Sign() == 1 {
 						executeChan <- cycle

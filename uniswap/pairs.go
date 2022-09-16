@@ -3,6 +3,7 @@ package uniswap
 import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -38,7 +39,8 @@ func GetAllPairsForFactory(factory common.Address) []Pair {
 	}
 	allPairsLengthInterface, _ := contract.Call("getAllPairsLength", factory)
 	for allPairsLengthInterface == nil {
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
+		fmt.Println("retrying getAllPairsLength, got", allPairsLengthInterface, factory)
 		allPairsLengthInterface, _ = contract.Call("getAllPairsLength", factory)
 	}
 	allPairsLength, _ := allPairsLengthInterface.(*big.Int)
@@ -51,8 +53,8 @@ func GetAllPairsForFactory(factory common.Address) []Pair {
 			// Just casted from interface{} to [][3] Address
 			castedSlice, ok := slice.([][3]common.Address)
 			for !ok {
-				time.Sleep(time.Second)
-				// fmt.Println("retrying getPairsByIndexRange, got", slice)
+				time.Sleep(2 * time.Second)
+				fmt.Println("retrying getPairsByIndexRange, got", slice, i)
 				slice, _ = contract.Call("getPairsByIndexRange", factory, big.NewInt(i), big.NewInt(i+STEP_SIZE))
 				castedSlice, ok = slice.([][3]common.Address)
 			}

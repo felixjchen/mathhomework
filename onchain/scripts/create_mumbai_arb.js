@@ -44,6 +44,7 @@ async function main() {
   const QS_PAIR = UniswapV2PairFactory.attach(QS_PAIR_ADDRESS);
   const SS_PAIR = UniswapV2PairFactory.attach(SS_PAIR_ADDRESS);
 
+  const [signer] = await hre.ethers.getSigners();
   await ERC20.mint(signer.address, ethers.utils.parseEther("99999"));
   await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("200"));
   await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
