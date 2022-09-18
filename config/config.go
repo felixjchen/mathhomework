@@ -22,7 +22,7 @@ import (
 // FIREBIRD_FACTORY_ADDRESS := common.HexToAddress("0x5De74546d3B86C8Df7FEEc30253865e1149818C8")  // Polygon WEIRD FEES
 // Meshswap : https://docs.meshswap.fi/developers/contract
 
-const PROD = true
+const PROD = false
 
 type Config struct {
 	PRIVATE_KEY string
@@ -59,7 +59,7 @@ func Get() *Config {
 			if PROD {
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://nd-850-404-289.p2pify.com/01acec55a711a393f40aa4cdc119a54d"
+				RPC_URL_HTTP := "https://soft-still-moon.matic.discover.quiknode.pro/8e541ee43ee71b4ca15719a9527783f010f2892f/"
 				RPC_URL_WS := "wss://ws-nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
 				CHAIN_ID := int64(137)
 
@@ -99,7 +99,7 @@ func Get() *Config {
 			} else {
 				PRIVATE_KEY := os.Getenv("MUMBAI_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://polygon-mumbai.infura.io/v3/75719af97abe4d9aa033c21c65d33aaa"
+				RPC_URL_HTTP := "https://rpc-mumbai.maticvigil.com/"
 				RPC_URL_WS := "wss://ws-nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
 				CHAIN_ID := int64(80001)
 

@@ -37,10 +37,10 @@ func GetAllPairsForFactory(factory common.Address) []Pair {
 	if err != nil {
 		panic(err)
 	}
-	allPairsLengthInterface, _ := contract.Call("getAllPairsLength", factory)
+	allPairsLengthInterface, err := contract.Call("getAllPairsLength", factory)
 	for allPairsLengthInterface == nil {
 		time.Sleep(1 * time.Second)
-		fmt.Println("retrying getAllPairsLength, got", allPairsLengthInterface, factory)
+		fmt.Println("retrying getAllPairsLength, got", allPairsLengthInterface, factory, err)
 		allPairsLengthInterface, _ = contract.Call("getAllPairsLength", factory)
 	}
 	allPairsLength, _ := allPairsLengthInterface.(*big.Int)
