@@ -59,11 +59,12 @@ func Get() *Config {
 			if PROD {
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
+				RPC_URL_HTTP := "https://nd-850-404-289.p2pify.com/01acec55a711a393f40aa4cdc119a54d"
 				RPC_URL_WS := "wss://ws-nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
 				CHAIN_ID := int64(137)
 
-				WETH_ADDRESS := common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270") //  Polygon
+				WETH_ADDRESS := common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270") //  Polygon WMATIC
+				// WETH_ADDRESS := common.HexToAddress("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174") //  Polygon USDC
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x9C7FfE06A4c5C58A5D60bC95baAb56F558A4dACf")     // Polygon
 				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x6962AD493D2fA1cA187075A2653d9CdCE4C21DD3") // Polygon
@@ -98,7 +99,7 @@ func Get() *Config {
 			} else {
 				PRIVATE_KEY := os.Getenv("MUMBAI_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://rpc-mumbai.maticvigil.com/"
+				RPC_URL_HTTP := "https://polygon-mumbai.infura.io/v3/75719af97abe4d9aa033c21c65d33aaa"
 				RPC_URL_WS := "wss://ws-nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
 				CHAIN_ID := int64(80001)
 

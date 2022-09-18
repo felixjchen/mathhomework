@@ -3,6 +3,7 @@ package programs
 import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
+	"arbitrage_go/counter"
 	"arbitrage_go/uniswap"
 	"fmt"
 	"log"
@@ -16,55 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/zap"
 )
-
-type TSCounter struct {
-	count uint64
-	mu    *sync.Mutex
-}
-
-func NewTSCounter(i uint64) *TSCounter {
-	return &TSCounter{
-		count: i,
-		mu:    &sync.Mutex{},
-	}
-}
-
-func (n *TSCounter) Get() uint64 {
-	return n.count
-}
-
-func (n *TSCounter) Inc() {
-	n.count++
-}
-
-func (n *TSCounter) Dec() {
-	n.count--
-}
-
-func (n *TSCounter) TSGet() uint64 {
-	n.Lock()
-	defer n.Unlock()
-	return n.count
-}
-
-func (n *TSCounter) TSInc() {
-	n.Lock()
-	defer n.Unlock()
-	n.count++
-}
-
-func (n *TSCounter) TSDec() {
-	n.Lock()
-	defer n.Unlock()
-	n.count--
-}
-
-func (n *TSCounter) Lock() {
-	n.mu.Lock()
-}
-func (n *TSCounter) Unlock() {
-	n.mu.Unlock()
-}
 
 func Arbitrage2Main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -89,22 +41,24 @@ func Arbitrage2Main() {
 
 	executeChan := make(chan uniswap.Cycle)
 	checkChan := make(chan uniswap.Cycle)
-	executeCounter := NewTSCounter(0)
-	checkCounter := NewTSCounter(0)
+	executeCounter := counter.NewTSCounter(0)
+	checkCounter := counter.NewTSCounter(0)
+
+	pairToReservesMu := sync.Mutex{}
+	pairToReserves := make(map[uniswap.Pair]uniswap.Reserve)
+	relaventPairs := []uniswap.Pair{}
+	relaventPairsMap := make(map[uniswap.Pair]bool)
+	relaventPairsMu := sync.Mutex{}
 
 	go func() {
 		for {
-			uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 3, checkChan)
+			pairToReserves = uniswap.GetReservesForPairs(allPairs)
+			sugar.Info("Updated ", len(allPairs), " Reserves")
+			uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 4, checkChan)
 			sugar.Info("RESTARTING CYCLES")
 		}
 	}()
 
-	pairToReservesMu := sync.Mutex{}
-	pairToReserves := uniswap.GetReservesForPairs(allPairs)
-	sugar.Info("Updated ", len(allPairs), " Reserves")
-	relaventPairs := []uniswap.Pair{}
-	relaventPairsMap := make(map[uniswap.Pair]bool)
-	relaventPairsMu := sync.Mutex{}
 	go func() {
 		lastUpdate := time.Now()
 		for {
@@ -119,15 +73,13 @@ func Arbitrage2Main() {
 				pairToReservesMu.Unlock()
 				sugar.Info("Updated ", len(temp), " Relavent Reserves")
 				lastUpdate = time.Now()
-
 			}
 		}
 	}()
 
 	go func() {
 		for cycle := range checkChan {
-			go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu)
-			checkCounter.TSInc()
+			go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter)
 			relaventPairsMu.Lock()
 			for _, pair := range cycle.Edges {
 				_, exist := relaventPairsMap[pair]
@@ -146,25 +98,26 @@ func Arbitrage2Main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		nounceCounter := NewTSCounter(nonce)
+		nounceCounter := counter.NewTSCounter(nonce)
 		for cycle := range executeChan {
-			ExecuteCycle(cycle, nounceCounter)
-			executeCounter.TSInc()
+			ExecuteCycle(cycle, nounceCounter, executeCounter)
 		}
 	}()
 
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
+			time.Sleep(time.Second)
 			sugar.Info("Check:", checkCounter.TSGet(), " Execute:", executeCounter.TSGet())
 		}
 	}()
 
 }
 
-func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, mu *sync.Mutex) {
+func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, mu *sync.Mutex, checkCounter *counter.TSCounter) {
+	defer checkCounter.TSInc()
 	newWeb3, err := web3.NewWeb3(config.Get().RPC_URL_HTTP)
 	if err != nil {
+		fmt.Println(err)
 		log.Fatal(err)
 	}
 	newWeb3.Eth.SetChainId(config.Get().CHAIN_ID)
@@ -179,8 +132,8 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 
 		// Min on current balance
 		if config.PROD {
-			if big.NewInt(0).Sub(amountIn, big.NewInt(960000000000000000)).Sign() == 1 {
-				amountIn = big.NewInt(960000000000000000)
+			if big.NewInt(0).Sub(amountIn, big.NewInt(1000000000000000000)).Sign() == 1 {
+				amountIn = big.NewInt(1000000000000000000)
 			}
 		}
 
@@ -199,7 +152,6 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 				if err != nil {
 					panic(err)
 				}
-
 				data, err := executor.EncodeABI("hoppity", amountIn, targets, cycleAmountsOut)
 				if err != nil {
 					panic(err)
@@ -214,6 +166,9 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 				if err == nil {
 					// 0.01 ether
 					gasGweiPrediction := big.NewInt(10000000000000000)
+					if !config.PROD {
+						gasGweiPrediction = big.NewInt(0)
+					}
 					netProfit := new(big.Int).Sub(arbProfit, gasGweiPrediction)
 
 					if netProfit.Sign() == 1 {
@@ -226,8 +181,7 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 
 }
 
-func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *TSCounter) {
-	// fmt.Println(cycle)
+func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeCounter *counter.TSCounter) {
 	pairToReserves := uniswap.GetReservesForPairs(cycle.Edges)
 
 	logger, err := zap.NewProduction()
@@ -279,10 +233,13 @@ func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *TSCounter) {
 				}
 				gasLimit, err := newWeb3.Eth.EstimateGas(call)
 				if err != nil {
-					// sugar.Error(err)
+					sugar.Error(err)
 				} else {
 					// 0.01 ether
 					gasGweiPrediction := big.NewInt(10000000000000000)
+					if !config.PROD {
+						gasGweiPrediction = big.NewInt(0)
+					}
 					netProfit := new(big.Int).Sub(arbProfit, gasGweiPrediction)
 
 					if netProfit.Sign() == 1 {
@@ -312,8 +269,8 @@ func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *TSCounter) {
 							// panic(err)
 						} else {
 							nonceCounter.Inc()
+							executeCounter.TSInc()
 							sugar.Info("tx hash: ", hash)
-							// panic(1)
 						}
 					}
 				}
