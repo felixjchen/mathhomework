@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/big"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,12 @@ func Arbitrage2Main() {
 		log.Fatal(err)
 	}
 	sugar := logger.Sugar()
+
+	web3 := blockchain.GetWeb3()
+	wmatic, _ := web3.Eth.NewContract(config.WMATIC_ABI, config.Get().WETH_ADDRESS.Hex())
+	balanceOfInterface, _ := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
+	balanceOf, _ := balanceOfInterface.(*big.Int)
+	sugar.Info("WMATIC Balance for ", config.Get().BUNDLE_EXECUTOR_ADDRESS, ": ", balanceOf)
 
 	allPairs := uniswap.GetAllPairsArray()
 	sugar.Info("Got ", len(allPairs), " pairs")
@@ -56,33 +63,36 @@ func Arbitrage2Main() {
 	cyclesMu := sync.Mutex{}
 
 	newWeb3 := blockchain.GetWeb3()
+	gasEstimateMu := sync.Mutex{}
+	gasEstimateMu.Lock()
 	gasEstimate, err := newWeb3.Eth.EstimateFee()
 	for err != nil {
 		time.Sleep(time.Second * 2)
 		gasEstimate, err = newWeb3.Eth.EstimateFee()
 	}
-	gasEstimateMu := sync.Mutex{}
+	gasEstimateMu.Unlock()
 
 	go func() {
-		uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 8, checkChan)
+		uniswap.GetCycles(config.Get().WETH_ADDRESS, graph, 3, checkChan)
 	}()
 
-	go func() {
+	go func(gasEstimateMu *sync.Mutex) {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2 {
-				gasEstimateMu.Lock()
-				gasEstimate, err = newWeb3.Eth.EstimateFee()
+				newEstimate, err := newWeb3.Eth.EstimateFee()
 				for err != nil {
 					time.Sleep(time.Second * 2)
-					gasEstimate, err = newWeb3.Eth.EstimateFee()
+					newEstimate, err = newWeb3.Eth.EstimateFee()
 				}
+				gasEstimateMu.Lock()
+				gasEstimate = newEstimate
 				gasEstimateMu.Unlock()
-				sugar.Info("Updated Gas Estimates, MaxFeePerGas: ", gasEstimate.MaxFeePerGas, " GWEI")
+				sugar.Info("Updated Gas Estimates, MaxFeePerGas: ", newEstimate.MaxFeePerGas, " GWEI")
 				lastUpdate = time.Now()
 			}
 		}
-	}()
+	}(&gasEstimateMu)
 
 	go func() {
 		lastUpdate := time.Now()
@@ -99,8 +109,9 @@ func Arbitrage2Main() {
 				sugar.Info("Updated ", len(temp), " Relavent Reserves")
 				lastUpdate = time.Now()
 				cyclesMu.Lock()
+				sugar.Info("Restarting Cycles")
 				for _, cycle := range cycles {
-					go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate)
+					go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf)
 				}
 				cyclesMu.Unlock()
 			}
@@ -109,7 +120,7 @@ func Arbitrage2Main() {
 
 	go func() {
 		for cycle := range checkChan {
-			go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate)
+			go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf)
 			relaventPairsMu.Lock()
 			for _, pair := range cycle.Edges {
 				_, exist := relaventPairsMap[pair]
@@ -133,7 +144,7 @@ func Arbitrage2Main() {
 		}
 		nounceCounter := counter.NewTSCounter(nonce)
 		for cycle := range executeChan {
-			ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate)
+			ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf)
 		}
 	}()
 
@@ -146,8 +157,15 @@ func Arbitrage2Main() {
 
 }
 
-func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, pairToReservesMu *sync.Mutex, checkCounter *counter.TSCounter, gasEstimate *eth.EstimateFee) {
+func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, pairToReservesMu *sync.Mutex, checkCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int) {
 	defer checkCounter.TSInc()
+
+	// logger, err := zap.NewProduction()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// sugar := logger.Sugar()
+
 	newWeb3, err := web3.NewWeb3(config.Get().RPC_URL_HTTP)
 	if err != nil {
 		fmt.Println(err)
@@ -165,8 +183,8 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 
 		// Min on current balance
 		if config.PROD {
-			if big.NewInt(0).Sub(amountIn, big.NewInt(1000000000000000000)).Sign() == 1 {
-				amountIn = big.NewInt(1000000000000000000)
+			if big.NewInt(0).Sub(amountIn, balanceOf).Sign() == 1 {
+				amountIn = balanceOf
 			}
 		}
 
@@ -196,9 +214,17 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 					Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
 				}
 				gasLimit, err := newWeb3.Eth.EstimateGas(call)
-				if err == nil {
+				for strings.Contains(fmt.Sprint(err), "json unmarshal response body") || strings.Contains(fmt.Sprint(err), "timeout") {
+					gasLimit, err = newWeb3.Eth.EstimateGas(call)
+				}
+				if err != nil {
+					// sugar.Error(err)
+					// sugar.Error(cycle, amountsOut)
+				} else {
+					gasEstimateMu.Lock()
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
+					gasEstimateMu.Unlock()
 
 					if netProfit.Sign() == 1 {
 						executeChan <- cycle
@@ -209,7 +235,7 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 	}
 }
 
-func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeCounter *counter.TSCounter, gasEstimate *eth.EstimateFee) {
+func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int) {
 	pairToReserves := uniswap.GetReservesForPairs(cycle.Edges)
 
 	logger, err := zap.NewProduction()
@@ -230,8 +256,8 @@ func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeC
 	if new(big.Int).Sub(E0, E1).Sign() == -1 {
 		amountIn := uniswap.GetOptimalAmountIn(E0, E1)
 		// Min on current balance
-		if big.NewInt(0).Sub(amountIn, big.NewInt(960000000000000000)).Sign() == 1 {
-			amountIn = big.NewInt(960000000000000000)
+		if big.NewInt(0).Sub(amountIn, balanceOf).Sign() == 1 {
+			amountIn = balanceOf
 		}
 
 		if amountIn.Sign() == 1 {
@@ -260,16 +286,21 @@ func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeC
 					Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
 				}
 				gasLimit, err := newWeb3.Eth.EstimateGas(call)
+				for strings.Contains(fmt.Sprint(err), "json unmarshal response body") || strings.Contains(fmt.Sprint(err), "timeout") {
+					gasLimit, err = newWeb3.Eth.EstimateGas(call)
+				}
+
 				if err != nil {
 					sugar.Error(err)
 				} else {
+					gasEstimateMu.Lock()
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
+					gasEstimateMu.Unlock()
 
 					fmt.Println(maxGasWei)
 
 					if netProfit.Sign() == 1 {
-						// sugar.Info("Estimate gas limit %v\n", gasLimit)
 						// sugar.Info("Estimated Profit ", cycle.Edges, arbProfit, " SUB GAS ", netProfit)
 						gasTipCap := gasEstimate.MaxPriorityFeePerGas
 						gasFeeCap := gasEstimate.MaxFeePerGas

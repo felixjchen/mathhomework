@@ -102,6 +102,7 @@ func GetAllPairsArray() []Pair {
 		pairsToAdd := GetAllPairsForFactory(factory)
 		allPairsArray = append(allPairsArray, pairsToAdd...)
 	}
+	allPairsArray = FilterPairs(TokenBlacklistFilter, allPairsArray)
 	return allPairsArray
 }
 
