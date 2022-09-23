@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Arbitrage2Main() {
+func Arbitrage3Main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	sugar := logging.GetSugar()
@@ -36,6 +36,16 @@ func Arbitrage2Main() {
 	balanceOfMu := sync.Mutex{}
 	sugar.Info("WMATIC Balance for ", config.Get().BUNDLE_EXECUTOR_ADDRESS, ": ", web3.Utils.FromWei(balanceOf))
 
+	gasEstimateMu := sync.Mutex{}
+	gasEstimateMu.Lock()
+	gasEstimate, err := web3.Eth.EstimateFee()
+	for err != nil {
+		time.Sleep(time.Second)
+		gasEstimate, err = web3.Eth.EstimateFee()
+	}
+	gasEstimateMu.Unlock()
+	sugar.Info("MaxFeePerGas ", web3.Utils.FromWei(gasEstimate.MaxFeePerGas))
+
 	allPairs := uniswap.GetAllPairsArray()
 	sugar.Info("Got ", len(allPairs), " pairs")
 
@@ -48,40 +58,34 @@ func Arbitrage2Main() {
 	}
 	sugar.Info("Created Graph")
 
+	cycles := uniswap.GetCyclesArray(config.Get().WETH_ADDRESS, graph, 4)
+	cyclesMu := sync.Mutex{}
+	relaventPairsMap := make(map[uniswap.Pair]bool)
+	relaventPairs := []uniswap.Pair{}
+	sugar.Info("Done finding cycles")
+
+	for _, cycle := range cycles {
+		for _, pair := range cycle.Edges {
+			_, exist := relaventPairsMap[pair]
+			if !exist {
+				relaventPairsMap[pair] = true
+				relaventPairs = append(relaventPairs, pair)
+			}
+		}
+	}
+
+	pairToReservesMu := sync.Mutex{}
+	pairToReserves := uniswap.GetReservesForPairs(relaventPairs)
+
 	executeChan := make(chan uniswap.Cycle)
-	checkChan := make(chan uniswap.Cycle)
 	executeCounter := counter.NewTSCounter(0)
 	checkCounter := counter.NewTSCounter(0)
 
-	sugar.Info("Updated ", len(allPairs), " Reserves")
-	pairToReservesMu := sync.Mutex{}
-	pairToReserves := uniswap.GetReservesForPairs(allPairs)
-	relaventPairs := []uniswap.Pair{}
-	relaventPairsMap := make(map[uniswap.Pair]bool)
-	relaventPairsMu := sync.Mutex{}
-
-	cycles := []uniswap.Cycle{}
-	cyclesMu := sync.Mutex{}
-
-	newWeb3 := blockchain.GetWeb3()
-	gasEstimateMu := sync.Mutex{}
-	gasEstimateMu.Lock()
-	gasEstimate, err := newWeb3.Eth.EstimateFee()
-	for err != nil {
-		time.Sleep(time.Second * 2)
-		gasEstimate, err = newWeb3.Eth.EstimateFee()
-	}
-	gasEstimateMu.Unlock()
-
 	go func() {
-		uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 3, checkChan)
-		sugar.Info("Done finding cycles")
-	}()
-
-	go func(balanceOfMu *sync.Mutex) {
 		lastUpdate := time.Now()
 		for {
-			if time.Since(lastUpdate).Seconds() >= 2 {
+			if time.Since(lastUpdate).Seconds() >= 1 {
+				// WMATIC
 				balanceOfInterface, err := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
 				for err != nil {
 					time.Sleep(time.Second * 2)
@@ -92,67 +96,42 @@ func Arbitrage2Main() {
 				balanceOf = temp
 				balanceOfMu.Unlock()
 				sugar.Info("Updated balance: ", web3.Utils.FromWei(temp))
-				lastUpdate = time.Now()
-			}
-		}
-	}(&balanceOfMu)
 
-	go func(gasEstimateMu *sync.Mutex) {
-		lastUpdate := time.Now()
-		for {
-			if time.Since(lastUpdate).Seconds() >= 2 {
-				newEstimate, err := newWeb3.Eth.EstimateFee()
+				// Gas
+				newEstimate, err := web3.Eth.EstimateFee()
 				for err != nil {
 					time.Sleep(time.Second * 2)
-					newEstimate, err = newWeb3.Eth.EstimateFee()
+					newEstimate, err = web3.Eth.EstimateFee()
 				}
 				gasEstimateMu.Lock()
 				gasEstimate = newEstimate
 				gasEstimateMu.Unlock()
 				sugar.Info("Updated Gas Estimates, MaxFeePerGas: ", newEstimate.MaxFeePerGas, " GWEI")
-				lastUpdate = time.Now()
-			}
-		}
-	}(&gasEstimateMu)
-	go func() {
-		lastUpdate := time.Now()
-		for {
-			if time.Since(lastUpdate).Seconds() >= 2.3 {
-				relaventPairsMu.Lock()
-				temp := uniswap.GetReservesForPairs(relaventPairs)
-				relaventPairsMu.Unlock()
+
+				// Reserves
+				tempReserves := uniswap.GetReservesForPairs(relaventPairs)
 				pairToReservesMu.Lock()
-				for pair, reserve := range temp {
+				for pair, reserve := range tempReserves {
 					pairToReserves[pair] = reserve
 				}
 				pairToReservesMu.Unlock()
-				sugar.Info("Updated ", len(temp), " Relavent Reserves")
+				sugar.Info("Updated ", len(tempReserves), " Relavent Reserves")
 				lastUpdate = time.Now()
-				cyclesMu.Lock()
-				sugar.Info("Restarting Cycles")
-				for _, cycle := range cycles {
-					go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
-				}
-				cyclesMu.Unlock()
 			}
 		}
 	}()
 
 	go func() {
-		for cycle := range checkChan {
-			// go CheckCycle(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
-			relaventPairsMu.Lock()
-			for _, pair := range cycle.Edges {
-				_, exist := relaventPairsMap[pair]
-				if !exist {
-					relaventPairsMap[pair] = true
-					relaventPairs = append(relaventPairs, pair)
+		lastUpdate := time.Now()
+		for {
+			if time.Since(lastUpdate).Seconds() >= 2.3 {
+				cyclesMu.Lock()
+				sugar.Info("Checking Cycles")
+				for _, cycle := range cycles {
+					go CheckCycle3(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
 				}
+				cyclesMu.Unlock()
 			}
-			relaventPairsMu.Unlock()
-			cyclesMu.Lock()
-			cycles = append(cycles, cycle)
-			cyclesMu.Unlock()
 		}
 	}()
 
@@ -164,7 +143,7 @@ func Arbitrage2Main() {
 		}
 		nounceCounter := counter.NewTSCounter(nonce)
 		for cycle := range executeChan {
-			ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+			ExecuteCycle3(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
 		}
 	}()
 
@@ -181,7 +160,7 @@ func Arbitrage2Main() {
 
 }
 
-func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, pairToReservesMu *sync.Mutex, checkCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int, balanceOfMu *sync.Mutex, sugar *zap.SugaredLogger) {
+func CheckCycle3(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Reserve, executeChan chan uniswap.Cycle, pairToReservesMu *sync.Mutex, checkCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int, balanceOfMu *sync.Mutex, sugar *zap.SugaredLogger) {
 	defer checkCounter.TSInc()
 
 	newWeb3, err := web3.NewWeb3(config.Get().RPC_URL_HTTP)
@@ -253,7 +232,7 @@ func CheckCycle(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.Re
 	}
 }
 
-func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int, balanceOfMu *sync.Mutex, sugar *zap.SugaredLogger) {
+func ExecuteCycle3(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeCounter *counter.TSCounter, gasEstimate *eth.EstimateFee, gasEstimateMu *sync.Mutex, balanceOf *big.Int, balanceOfMu *sync.Mutex, sugar *zap.SugaredLogger) {
 	pairToReserves := uniswap.GetReservesForPairs(cycle.Edges)
 
 	// sugar := logging.GetSugar()

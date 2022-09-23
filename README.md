@@ -30,11 +30,9 @@ https://github.com/chenzhijie/go-web3/blob/master/examples/contract/erc20.go
 
 # TODO 
 
-arbitrary path
+fuck need dynamic dex fees
 
-volume optimisation 
-
-threading
+can simulate transfers (hard)
 
 flashbots
 

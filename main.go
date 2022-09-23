@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	arbitrage3Ptr := flag.Bool("arb3", false, "arbitrage3 program")
 	arbitrage2Ptr := flag.Bool("arb2", false, "arbitrage2 program")
 	arbitragePtr := flag.Bool("arb", false, "arbitrage program")
 	backrunPtr := flag.Bool("br", false, "backrun program")
@@ -20,6 +21,9 @@ func main() {
 	}
 	if *arbitrage2Ptr {
 		go programs.Arbitrage2Main()
+	}
+	if *arbitrage3Ptr {
+		go programs.Arbitrage3Main()
 	}
 	if *backrunPtr {
 		go programs.Mempool()
