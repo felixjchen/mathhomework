@@ -1,78 +1,49 @@
 package uniswap
 
 import (
-	"arbitrage_go/config"
 	"arbitrage_go/util"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// type Cycle struct {
-// 	pools []Pool
+// func dfs(candidate *Cycle, graph *map[common.Address][]Pair, maxPathLength int, wg *sync.WaitGroup, checkChan chan Cycle) {
+// 	defer wg.Done()
+
+// 	n := len(candidate.Tokens)
+// 	head := candidate.Tokens[n-1]
+// 	isCycle := candidate.Tokens[0] == candidate.Tokens[n-1] && 2 < n
+// 	if isCycle {
+// 		checkChan <- *candidate
+// 	} else {
+// 		if n-1 < maxPathLength {
+// 			for _, pair := range (*graph)[head] {
+// 				// No reusing edges
+// 				if !util.Contains(candidate.Edges, pair) {
+// 					_, newHead := SortTokens(head, pair)
+// 					newTokens := append([]common.Address{}, candidate.Tokens...)
+// 					newEdges := append([]Pair{}, candidate.Edges...)
+// 					newTokens = append(newTokens, newHead)
+// 					newEdges = append(newEdges, pair)
+// 					newCandidate := Cycle{newTokens, newEdges}
+// 					wg.Add(1)
+// 					go dfs(&newCandidate, graph, maxPathLength, wg, checkChan)
+// 				}
+// 			}
+// 		}
+// 	}
 // }
 
-func GetTwoHops(tokensToPools map[common.Address][]Pair) [][2]Pair {
-	weth := config.Get().WETH_ADDRESS
-	pathes := [][2]Pair{}
-	for _, pool1 := range tokensToPools[weth] {
-		intermediateToken := pool1.Token0
-		if pool1.Token0 == weth {
-			intermediateToken = pool1.Token1
-		}
-		for _, pool2 := range tokensToPools[intermediateToken] {
-			samePair := (pool2.Token0 == weth || pool2.Token1 == weth) && (pool2.Token0 == intermediateToken || pool2.Token1 == intermediateToken)
-			if pool1.Address != pool2.Address && samePair {
-				pathes = append(pathes, [2]Pair{pool1, pool2})
-			}
-		}
-	}
-	return pathes
-}
+// // Pairs are nodes
+// func GetCycles2(start common.Address, graph map[common.Address][]Pair, maxPathLength int, checkChan chan Cycle) {
 
-type Cycle struct {
-	Tokens []common.Address
-	Edges  []Pair
-}
+// 	wg := sync.WaitGroup{}
+// 	// mu := sync.Mutex{}
 
-func dfs(candidate *Cycle, graph *map[common.Address][]Pair, maxPathLength int, wg *sync.WaitGroup, checkChan chan Cycle) {
-	defer wg.Done()
-
-	n := len(candidate.Tokens)
-	head := candidate.Tokens[n-1]
-	isCycle := candidate.Tokens[0] == candidate.Tokens[n-1] && 2 < n
-	if isCycle {
-		checkChan <- *candidate
-	} else {
-		if n-1 < maxPathLength {
-			for _, pair := range (*graph)[head] {
-				// No reusing edges
-				if !util.Contains(candidate.Edges, pair) {
-					_, newHead := SortTokens(head, pair)
-					newTokens := append([]common.Address{}, candidate.Tokens...)
-					newEdges := append([]Pair{}, candidate.Edges...)
-					newTokens = append(newTokens, newHead)
-					newEdges = append(newEdges, pair)
-					newCandidate := Cycle{newTokens, newEdges}
-					wg.Add(1)
-					go dfs(&newCandidate, graph, maxPathLength, wg, checkChan)
-				}
-			}
-		}
-	}
-}
-
-// Pairs are nodes
-func GetCycles2(start common.Address, graph map[common.Address][]Pair, maxPathLength int, checkChan chan Cycle) {
-
-	wg := sync.WaitGroup{}
-	// mu := sync.Mutex{}
-
-	initialCandidate := Cycle{[]common.Address{start}, []Pair{}}
-	wg.Add(1)
-	go dfs(&initialCandidate, &graph, maxPathLength, &wg, checkChan)
-	wg.Wait()
-}
+// 	initialCandidate := Cycle{[]common.Address{start}, []Pair{}}
+// 	wg.Add(1)
+// 	go dfs(&initialCandidate, &graph, maxPathLength, &wg, checkChan)
+// 	wg.Wait()
+// }
 
 func GetCyclesToChan(start common.Address, graph map[common.Address][]Pair, maxPathLength int, checkChan chan Cycle) {
 	// dfs

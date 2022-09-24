@@ -10,7 +10,7 @@ import (
 )
 
 func FindCycles() {
-	sugar := logging.GetSugar()
+	sugar := logging.GetSugar("cycle")
 
 	allPairs := uniswap.GetAllPairsArray()
 	sugar.Info("Got ", len(allPairs), " pairs")

@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-func GetSugar() *zap.SugaredLogger {
+func GetSugar(prefix string) *zap.SugaredLogger {
 	currentTime := time.Now()
 	dateString := currentTime.Format("01-02-2006-15:04:05")
 	rawJSON := []byte(`{
 	  "level": "info",
 	  "encoding": "json",
-	  "outputPaths": ["stdout", "./logging/logs/log-` + dateString + `.log"],
+	  "outputPaths": ["stdout", "./logging/logs/` + prefix + `-` + dateString + `.log"],
 	  "errorOutputPaths": ["stderr"],
 	  "encoderConfig": {
 	    "messageKey": "message",
@@ -26,6 +27,8 @@ func GetSugar() *zap.SugaredLogger {
 		panic(err)
 	}
 
+	cfg.EncoderConfig.TimeKey = "timestamp"
+	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	logger := zap.Must(cfg.Build())
 	defer logger.Sync()
 

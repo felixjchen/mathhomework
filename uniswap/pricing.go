@@ -11,16 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type Reserve struct {
-	Reserve0           *big.Int
-	Reserve1           *big.Int
-	BlockTimestampLast *big.Int
-}
-
-// func TupleToReserve(tuple [3]*big.Int) Reserve {
-// 	return Reserve{Reserve0: *tuple[0], Reserve1: *tuple[1], BlockTimestampLast: *tuple[2]}
-// }
-
 func CloneReserve(i Reserve) Reserve {
 	Reserve0 := new(big.Int).Set(i.Reserve0)
 	Reserve1 := new(big.Int).Set(i.Reserve1)

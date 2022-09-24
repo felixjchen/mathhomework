@@ -31,7 +31,7 @@ func NewDBConn() DB {
 		DB:          0,  // use default DB
 		ReadTimeout: 15 * time.Second,
 	})
-	sugar := logging.GetSugar()
+	sugar := logging.GetSugar("db")
 	return DB{client, sugar}
 }
 

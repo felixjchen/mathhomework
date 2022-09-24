@@ -7,7 +7,7 @@ services:
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     volumes:
-      - ./redisdata:/data
+      - ./database/redisdata:/data
     deploy:
       resources:
         limits:

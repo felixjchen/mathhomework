@@ -13,12 +13,6 @@ import (
 
 const STEP_SIZE int64 = 1000
 
-type Pair struct {
-	Token0  common.Address
-	Token1  common.Address
-	Address common.Address
-}
-
 // func GetAllPairsSet(pools []Pair) map[common.Address]bool {
 // 	set := make(map[common.Address]bool)
 // 	for _, pool := range pools {
