@@ -38,21 +38,7 @@ func Arbitrage3Main() {
 	database := database.NewDBConn()
 	cycleHashes := database.GetCycleHashes()
 
-	relaventPairs := []uniswap.Pair{}
-	relaventPairsMap := make(map[uniswap.Pair]bool)
-	for i := 0; i < len(cycleHashes); i += MAX_QUERY_SIZE {
-		j := util.Ternary(i+MAX_QUERY_SIZE < len(cycleHashes), i+MAX_QUERY_SIZE, len(cycleHashes)-1)
-		cycles := database.GetCycles(cycleHashes[i:j])
-		for _, cycle := range cycles {
-			for _, pair := range cycle.Edges {
-				_, exist := relaventPairsMap[pair]
-				if !exist {
-					relaventPairsMap[pair] = true
-					relaventPairs = append(relaventPairs, pair)
-				}
-			}
-		}
-	}
+	relaventPairs := database.GetPairs()
 	sugar.Info("Found ", len(relaventPairs), " relavent pairs")
 
 	// Get all reserves to start with
@@ -93,7 +79,7 @@ func Arbitrage3Main() {
 	go func() {
 		lastUpdate := time.Now()
 		for {
-			if time.Since(lastUpdate).Seconds() >= 2.3 {
+			if time.Since(lastUpdate).Seconds() >= 1 {
 				temp := uniswap.GetReservesForPairs(relaventPairs)
 				pairToReservesMu.Lock()
 				for pair, reserve := range temp {
@@ -106,15 +92,18 @@ func Arbitrage3Main() {
 	}()
 
 	go func() {
-		for i := 0; i < len(cycleHashes); i += MAX_CHECK_SIZE {
-			j := util.Ternary(i+MAX_CHECK_SIZE < len(cycleHashes), i+MAX_CHECK_SIZE, len(cycleHashes)-1)
-			cycles := database.GetCycles(cycleHashes[i:j])
-			wg := sync.WaitGroup{}
-			for _, cycle := range cycles {
-				wg.Add(1)
-				go CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar, &wg)
+		for {
+			for i := 0; i < len(cycleHashes); i += MAX_CHECK_SIZE {
+				j := util.Ternary(i+MAX_CHECK_SIZE < len(cycleHashes), i+MAX_CHECK_SIZE, len(cycleHashes)-1)
+				cycles := database.GetCycles(cycleHashes[i:j])
+				wg := sync.WaitGroup{}
+				for _, cycle := range cycles {
+					wg.Add(1)
+					go CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar, &wg)
+				}
+				wg.Wait()
 			}
-			wg.Wait()
+			sugar.Info("Done Cycles")
 		}
 	}()
 

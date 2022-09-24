@@ -21,6 +21,9 @@ type DB struct {
 	sugar  *zap.SugaredLogger
 }
 
+const CYCLE_INDEX = "CYCLEINDEX"
+const PAIR_INDEX = "PAIRINDEX"
+
 func NewDBConn() DB {
 	client := redis.NewClient(&redis.Options{
 		Addr:        "0.0.0.0:6379",
@@ -33,11 +36,30 @@ func NewDBConn() DB {
 }
 
 func (db *DB) GetCycleHashes() []string {
-	val, err := db.client.Get("INDEX").Result()
+	val, err := db.client.Get(CYCLE_INDEX).Result()
 	if err != nil {
 		panic(err)
 	}
-	return strings.Split(val, " ")
+	cycleHashes := strings.Split(val, " ")
+	return cycleHashes[:len(cycleHashes)-1]
+}
+
+func (db *DB) GetPairs() []uniswap.Pair {
+	val, err := db.client.Get(PAIR_INDEX).Result()
+	if err != nil {
+		panic(err)
+	}
+	pairHashes := strings.Split(val, " ")
+	pairHashes = pairHashes[:len(pairHashes)-1]
+	pairs := []uniswap.Pair{}
+	for _, pairHash := range pairHashes {
+		pairB64, err := db.client.Get(pairHash).Result()
+		if err != nil {
+			panic(err)
+		}
+		pairs = append(pairs, StructFromB64(pairB64, uniswap.Pair{}))
+	}
+	return pairs
 }
 
 func (db *DB) GetCycles(hashes []string) []uniswap.Cycle {
@@ -51,7 +73,7 @@ func (db *DB) GetCycles(hashes []string) []uniswap.Cycle {
 	}
 	cycles := []uniswap.Cycle{}
 	for _, cmd := range cmds {
-		cycles = append(cycles, CycleFromB64(cmd.(*redis.StringCmd).Val()))
+		cycles = append(cycles, StructFromB64(cmd.(*redis.StringCmd).Val(), uniswap.Cycle{}))
 	}
 	return cycles
 }
@@ -61,18 +83,29 @@ func (db *DB) GetCycle(k string) uniswap.Cycle {
 	if err != nil {
 		panic(err)
 	}
-	return CycleFromB64(val)
+	return StructFromB64(val, uniswap.Cycle{})
 }
 
 func (db *DB) AddCycle(cycle uniswap.Cycle) {
-	k := hashCycle(cycle)
-	v := CycleToB64(cycle)
-	_, err := db.client.Get(k).Result()
+	cycleHash := hashStruct(cycle)
+	_, err := db.client.Get(cycleHash).Result()
 	if err != nil {
 		db.sugar.Info("Adding to Redis:", cycle)
 		pipe := db.client.Pipeline()
-		pipe.Set(k, v, 0)
-		pipe.Append("INDEX", k+" ")
+		cycleB64 := structToB64(cycle)
+		pipe.Set(cycleHash, cycleB64, 0)
+		pipe.Append(CYCLE_INDEX, cycleHash+" ")
+
+		for _, pair := range cycle.Edges {
+			pairHash := hashStruct(pair)
+			_, err := db.client.Get(pairHash).Result()
+			if err != nil {
+				pairB64 := structToB64(pair)
+				pipe.Set(pairHash, pairB64, 0)
+				pipe.Append(PAIR_INDEX, pairHash+" ")
+			}
+		}
+
 		_, err := pipe.Exec()
 		if err != nil {
 			panic(err)
@@ -82,8 +115,8 @@ func (db *DB) AddCycle(cycle uniswap.Cycle) {
 	}
 }
 
-func hashCycle(c uniswap.Cycle) string {
-	h, err := hashstructure.Hash(c, hashstructure.FormatV2, nil)
+func hashStruct[T any](t T) string {
+	h, err := hashstructure.Hash(t, hashstructure.FormatV2, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +124,7 @@ func hashCycle(c uniswap.Cycle) string {
 }
 
 // go binary encoder
-func CycleToB64(m uniswap.Cycle) string {
+func structToB64[T any](m T) string {
 	b := bytes.Buffer{}
 	e := gob.NewEncoder(&b)
 	err := e.Encode(m)
@@ -102,8 +135,7 @@ func CycleToB64(m uniswap.Cycle) string {
 }
 
 // go binary decoder
-func CycleFromB64(str string) uniswap.Cycle {
-	m := uniswap.Cycle{}
+func StructFromB64[T any](str string, empty T) T {
 	by, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
 		fmt.Println(`failed base64 Decode`, err)
@@ -111,9 +143,9 @@ func CycleFromB64(str string) uniswap.Cycle {
 	b := bytes.Buffer{}
 	b.Write(by)
 	d := gob.NewDecoder(&b)
-	err = d.Decode(&m)
+	err = d.Decode(&empty)
 	if err != nil {
 		fmt.Println(`failed gob Decode`, err)
 	}
-	return m
+	return empty
 }
