@@ -2,10 +2,8 @@ package uniswap
 
 import (
 	"arbitrage_go/config"
-	"arbitrage_go/logging"
 	"arbitrage_go/util"
 	"sync"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -104,54 +102,6 @@ func GetCyclesToChan(start common.Address, graph map[common.Address][]Pair, maxP
 			}
 		}
 	}
-}
-
-func GetCyclesArray(start common.Address, graph map[common.Address][]Pair, maxPathLength int) []Cycle {
-	res := []Cycle{}
-	mu := sync.Mutex{}
-	sugar := logging.GetSugar()
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			mu.Lock()
-			sugar.Info("Finding cycles, found: ", len(res))
-			mu.Unlock()
-		}
-	}()
-
-	// dfs
-	stack := []Cycle{}
-	stack = append(stack, Cycle{[]common.Address{start}, []Pair{}})
-	for len(stack) > 0 {
-		// pop
-		candidate := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		head := candidate.Tokens[len(candidate.Tokens)-1]
-		if start == head && len(candidate.Edges) > 0 {
-			mu.Lock()
-			res = append(res, candidate)
-			if len(res) > 1082793 {
-				return res
-			}
-			mu.Unlock()
-		} else {
-			// keep going
-			if len(candidate.Edges) < maxPathLength {
-				for _, pair := range graph[head] {
-					// No reusing edges
-					if !util.Contains(candidate.Edges, pair) {
-						_, newHead := SortTokens(head, pair)
-						newTokens := append(append([]common.Address{}, candidate.Tokens...), newHead)
-						newEdges := append(append([]Pair{}, candidate.Edges...), pair)
-						newCandidate := Cycle{newTokens, newEdges}
-						stack = append(stack, newCandidate)
-					}
-				}
-			}
-		}
-	}
-	return res
 }
 
 func SortTokens(start common.Address, pair Pair) (common.Address, common.Address) {

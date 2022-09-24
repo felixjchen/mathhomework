@@ -12,7 +12,7 @@ import (
 
 // https://defillama.com/chain/Polygon
 
-// GOD DEX
+// GOOD DEX
 // MMF : https://mmfinance.gitbook.io/docs/smart-contracts/polygon-smart-contracts
 // SUSHISWAP : https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 // APESWAP : https://apeswap.gitbook.io/apeswap-finance/where-dev/smart-contracts#polygon

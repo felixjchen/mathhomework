@@ -2,9 +2,12 @@ package blockchain
 
 import (
 	"arbitrage_go/config"
+	"math/big"
 	"sync"
+	"time"
 
 	"github.com/chenzhijie/go-web3"
+	"github.com/chenzhijie/go-web3/eth"
 )
 
 var lock = &sync.Mutex{}
@@ -33,4 +36,28 @@ func GetWeb3() *web3.Web3 {
 	}
 
 	return Web3
+}
+
+func GetWMATICBalance() *big.Int {
+	web3 := GetWeb3()
+	wmatic, _ := web3.Eth.NewContract(config.WMATIC_ABI, config.Get().WETH_ADDRESS.Hex())
+	balanceOfInterface, err := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
+	for err != nil {
+		time.Sleep(time.Second)
+		balanceOfInterface, err = wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
+	}
+	balanceOf, _ := balanceOfInterface.(*big.Int)
+	return balanceOf
+}
+
+func GetGasEstimate() *eth.EstimateFee {
+	newWeb3 := GetWeb3()
+	gasEstimateMu := sync.Mutex{}
+	gasEstimateMu.Lock()
+	gasEstimate, err := newWeb3.Eth.EstimateFee()
+	for err != nil {
+		time.Sleep(time.Second)
+		gasEstimate, err = newWeb3.Eth.EstimateFee()
+	}
+	return gasEstimate
 }

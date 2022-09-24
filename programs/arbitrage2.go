@@ -27,12 +27,7 @@ func Arbitrage2Main() {
 	sugar := logging.GetSugar()
 
 	web3 := blockchain.GetWeb3()
-	wmatic, _ := web3.Eth.NewContract(config.WMATIC_ABI, config.Get().WETH_ADDRESS.Hex())
-	balanceOfInterface, err := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
-	for err != nil {
-		balanceOfInterface, err = wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
-	}
-	balanceOf, _ := balanceOfInterface.(*big.Int)
+	balanceOf := blockchain.GetWMATICBalance()
 	balanceOfMu := sync.Mutex{}
 	sugar.Info("WMATIC Balance for ", config.Get().BUNDLE_EXECUTOR_ADDRESS, ": ", web3.Utils.FromWei(balanceOf))
 
@@ -57,21 +52,14 @@ func Arbitrage2Main() {
 	pairToReservesMu := sync.Mutex{}
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
 	relaventPairs := []uniswap.Pair{}
-	relaventPairsMap := make(map[uniswap.Pair]bool)
 	relaventPairsMu := sync.Mutex{}
+	relaventPairsMap := make(map[uniswap.Pair]bool)
 
 	cycles := []uniswap.Cycle{}
 	cyclesMu := sync.Mutex{}
 
-	newWeb3 := blockchain.GetWeb3()
 	gasEstimateMu := sync.Mutex{}
-	gasEstimateMu.Lock()
-	gasEstimate, err := newWeb3.Eth.EstimateFee()
-	for err != nil {
-		time.Sleep(time.Second * 2)
-		gasEstimate, err = newWeb3.Eth.EstimateFee()
-	}
-	gasEstimateMu.Unlock()
+	gasEstimate := blockchain.GetGasEstimate()
 
 	go func() {
 		uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 3, checkChan)
@@ -82,12 +70,7 @@ func Arbitrage2Main() {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2 {
-				balanceOfInterface, err := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
-				for err != nil {
-					time.Sleep(time.Second * 2)
-					balanceOfInterface, err = wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)
-				}
-				temp := balanceOfInterface.(*big.Int)
+				temp := blockchain.GetWMATICBalance()
 				balanceOfMu.Lock()
 				balanceOf = temp
 				balanceOfMu.Unlock()
@@ -101,11 +84,7 @@ func Arbitrage2Main() {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2 {
-				newEstimate, err := newWeb3.Eth.EstimateFee()
-				for err != nil {
-					time.Sleep(time.Second * 2)
-					newEstimate, err = newWeb3.Eth.EstimateFee()
-				}
+				newEstimate := blockchain.GetGasEstimate()
 				gasEstimateMu.Lock()
 				gasEstimate = newEstimate
 				gasEstimateMu.Unlock()
@@ -114,6 +93,7 @@ func Arbitrage2Main() {
 			}
 		}
 	}(&gasEstimateMu)
+
 	go func() {
 		lastUpdate := time.Now()
 		for {
@@ -160,7 +140,7 @@ func Arbitrage2Main() {
 		web3 := blockchain.GetWeb3()
 		nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
 		if err != nil {
-			log.Fatal(err)
+			sugar.Fatal(err)
 		}
 		nounceCounter := counter.NewTSCounter(nonce)
 		for cycle := range executeChan {
