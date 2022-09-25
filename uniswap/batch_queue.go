@@ -41,10 +41,13 @@ func StartBatchQueue(sugar *zap.SugaredLogger, batchChan chan BatchCandidate, no
 		for {
 			time.Sleep(time.Second)
 			mu.Lock()
+			if len(q) < config.MAX_BATCH_SIZE {
+				continue
+			}
 			sort.Slice(q, func(i, j int) bool {
 				return new(big.Int).Sub(q[i].NetProfit, q[j].NetProfit).Sign() == 1
 			})
-			for i := range q {
+			for i := 1; i < config.MAX_BATCH_SIZE; i++ {
 				start, end := 0, i+1
 				batch := []Cycle{}
 				usedPairsMap := make(map[Pair]bool)
@@ -65,7 +68,9 @@ func StartBatchQueue(sugar *zap.SugaredLogger, batchChan chan BatchCandidate, no
 						batch = append(batch, candidate.Cycle)
 					}
 				}
-
+				if len(batch) <= 1 {
+					continue
+				}
 				pairToReserves := GetReservesForPairs(relaventPairs)
 				amountIn_ := []*big.Int{}
 				targets_ := [][]common.Address{}
@@ -115,10 +120,10 @@ func StartBatchQueue(sugar *zap.SugaredLogger, batchChan chan BatchCandidate, no
 					gasEstimateMu.Lock()
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit_, maxGasWei)
+					sugar.Info("BATCH of len ", len(batch), " Estimated Profit ", arbProfit_, " SUB GAS ", netProfit)
 					gasEstimateMu.Unlock()
 
 					if netProfit.Sign() == 1 {
-						sugar.Info("BATCH Estimated Profit ", netProfit, " SUB GAS ", netProfit)
 						gasTipCap := gasEstimate.MaxPriorityFeePerGas
 						gasFeeCap := gasEstimate.MaxFeePerGas
 
@@ -142,7 +147,6 @@ func StartBatchQueue(sugar *zap.SugaredLogger, batchChan chan BatchCandidate, no
 							nonceCounter.Unlock()
 							executeCounter.TSInc()
 							sugar.Info("BATCH tx hash: ", hash)
-							panic(1)
 						}
 					}
 				}

@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const MAX_CHECK_SIZE = 500
+const MAX_CHECK_SIZE = 50
 const MAX_QUERY_SIZE = 100000
 
 func ArbitrageMain() {

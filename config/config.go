@@ -33,6 +33,7 @@ const CALL_PAIRS = false
 
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
+const MAX_BATCH_SIZE = 4
 
 type Config struct {
 	PRIVATE_KEY string
