@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"math/rand"
 	"runtime"
 	"strings"
 	"sync"
@@ -40,6 +41,8 @@ func ArbitrageMain() {
 
 	database := database.NewDBConn()
 	cycleHashes := database.GetCycleHashes()
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
 
 	relaventPairs := database.GetPairs()
 	sugar.Info("Found ", len(relaventPairs), " relavent pairs")
@@ -187,16 +190,16 @@ func CheckCycleWG(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.
 				}
 				if err != nil {
 					sugar.Error(err)
-					sugar.Error(cycle.Tokens, cycle.Edges)
+					// sugar.Error(cycle.Tokens, cycle.Edges)
 				} else {
 					gasEstimateMu.Lock()
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
 					gasEstimateMu.Unlock()
 					// sugar.Info(arbProfit, netProfit)
-					if new(big.Int).Add(netProfit, big.NewInt(BATCH_THRESHOLD)).Sign() >= 1 {
-						sugar.Info("BATCH CANDIDATE ", netProfit)
-					}
+					// if new(big.Int).Add(netProfit, big.NewInt(BATCH_THRESHOLD)).Sign() >= 1 {
+					// 	sugar.Info("BATCH CANDIDATE ", netProfit)
+					// }
 
 					if netProfit.Sign() == 1 {
 						executeChan <- cycle
