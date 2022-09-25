@@ -58,7 +58,6 @@ contract FlashBotsMultiCall {
     address private immutable owner;
     address private immutable executor;
 
-    // TODO IDK
     IWETH public WETH = IWETH(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
 
     modifier onlyExecutor() {
@@ -71,21 +70,16 @@ contract FlashBotsMultiCall {
         _;
     }
 
-    constructor(address _executor) payable {
+    constructor(address _executor) {
         owner = msg.sender;
         executor = _executor;
-        if (msg.value > 0) {
-            WETH.deposit{value: msg.value}();
-        }
     }
 
-    function setWeth(address _new) public onlyOwner {
+    function setWeth(address _new) external onlyOwner {
         WETH = IWETH(_new);
     }
 
-    receive() external payable {}
-
-    function sweepERC20(
+    function s(
         IERC20 token,
         address _to,
         uint256 _amount
@@ -93,15 +87,15 @@ contract FlashBotsMultiCall {
         token.transfer(_to, _amount);
     }
 
-    function hoppity(
+    function hi(
         uint256 _amountIn,
         address[] calldata _targets,
         uint256[2][] calldata _amountsOut
-    ) public payable onlyExecutor {
+    ) public onlyExecutor {
         uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
         WETH.transfer(_targets[0], _amountIn);
         uint256 n = _targets.length;
-        for (uint256 i = 0; i < n - 1; i++) {
+        for (uint256 i = 0; i < n - 1; i = unsafe_inc(i)) {
             IUniswapV2Pair(_targets[i]).swap(
                 _amountsOut[i][0],
                 _amountsOut[i][1],
@@ -119,61 +113,50 @@ contract FlashBotsMultiCall {
         require(_wethBalanceAfter > _wethBalanceBefore, "not profitable");
     }
 
-    function hoppitysq(
+    function hi2(
         uint256[] calldata _amountIn,
         address[][] calldata _targets,
         uint256[2][][] calldata _amountsOut
-    ) external payable onlyExecutor {
+    ) external onlyExecutor {
         uint256 n = _amountIn.length;
-        for (uint256 i = 0; i < n; i++) {
-            hoppity(_amountIn[i], _targets[i], _amountsOut[i]);
+        for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
+            hi(_amountIn[i], _targets[i], _amountsOut[i]);
         }
     }
 
-    function uniswapWeth(
-        uint256 _wethAmountToFirstMarket,
-        uint256 _ethAmountToCoinbase,
-        address[] memory _targets,
-        bytes[] memory _payloads
-    ) external payable onlyExecutor {
-        require(_targets.length == _payloads.length, "bad lengths");
+    function hp(
+        uint256 _amountIn,
+        address[] calldata _targets,
+        bytes[] calldata _payloads
+    ) public onlyExecutor {
         uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
-        bool success = WETH.transfer(_targets[0], _wethAmountToFirstMarket);
-        require(success, "first weth fail");
-        for (uint256 i = 0; i < _targets.length; i++) {
+        bool success = WETH.transfer(_targets[0], _amountIn);
+        require(success, "f");
+        for (uint256 i = 0; i < _targets.length; i = unsafe_inc(i)) {
             (bool _success, bytes memory _response) = _targets[i].call(
                 _payloads[i]
             );
-            require(_success, "error on loop");
+            require(_success, "l");
             _response;
         }
-
         uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(
-            _wethBalanceAfter > _wethBalanceBefore,
-            "reverted non profitable"
-        );
-        // require(
-        //     _wethBalanceAfter > _wethBalanceBefore + _ethAmountToCoinbase,
-        //     "coinbase fail"
-        // );
-        // if (_ethAmountToCoinbase == 0) return;
-
-        // uint256 _ethBalance = address(this).balance;
-        // if (_ethBalance < _ethAmountToCoinbase) {
-        //     WETH.withdraw(_ethAmountToCoinbase - _ethBalance);
-        // }
-        // block.coinbase.transfer(_ethAmountToCoinbase);
+        require(_wethBalanceAfter > _wethBalanceBefore, "np");
     }
 
-    function call(
-        address payable _to,
-        uint256 _value,
-        bytes calldata _data
-    ) external payable onlyOwner returns (bytes memory) {
-        require(_to != address(0));
-        (bool _success, bytes memory _result) = _to.call{value: _value}(_data);
-        require(_success);
-        return _result;
+    function hp2(
+        uint256[] calldata _amountIn,
+        address[][] calldata _targets,
+        bytes[][] calldata _payloads
+    ) external onlyExecutor {
+        uint256 n = _amountIn.length;
+        for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
+            hp(_amountIn[i], _targets[i], _payloads[i]);
+        }
+    }
+
+    function unsafe_inc(uint256 x) private pure returns (uint256) {
+        unchecked {
+            return x + 1;
+        }
     }
 }

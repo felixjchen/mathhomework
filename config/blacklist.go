@@ -48,7 +48,7 @@ var TOKEN_BLACKLIST = map[common.Address]bool{
 	common.HexToAddress("0x73f0F6aaB6cBC00817f7EfD4f76Da714067bFaAd"): true,
 	common.HexToAddress("0xc2b09f78EeE5D2c7879b6D11D9e397201C8f3970"): true,
 	common.HexToAddress("0x9318686F89c09078C6B2aD99587c388f90b27C1c"): true,
-	common.HexToAddress("0x0000000000000000000000000000000000000000"): true,
+	common.HexToAddress("0x6f11124651b7e512b16a0e14e82fec1ddd7dac46"): true,
 	common.HexToAddress("0x0000000000000000000000000000000000000000"): true,
 	common.HexToAddress("0x0000000000000000000000000000000000000000"): true,
 	common.HexToAddress("0x0000000000000000000000000000000000000000"): true,

@@ -8,6 +8,11 @@ import (
 
 // TODO_MED cleanup types
 
+type BatchCandidate struct {
+	Cycle     Cycle
+	NetProfit *big.Int
+}
+
 type SwapExactTokensForTokensArgs struct {
 	AmountIn     *big.Int
 	AmountOutMin *big.Int

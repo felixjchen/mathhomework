@@ -26,7 +26,7 @@ func FindCycles() {
 	checkChan := make(chan uniswap.Cycle)
 
 	go func() {
-		db := database.NewDBConn()
+		db := database.NewDBConn(sugar)
 		// TODO MED: Thread this
 		for cycle := range checkChan {
 			db.AddCycle(cycle)
