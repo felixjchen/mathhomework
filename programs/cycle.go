@@ -26,13 +26,13 @@ func FindCycles() {
 	checkChan := make(chan uniswap.Cycle)
 
 	go func() {
-		db := database.NewDBConn()
+		db := database.NewDBConn(sugar)
 		for cycle := range checkChan {
 			db.AddCycle(cycle)
 		}
 	}()
 
 	sugar.Info("START CYCLES")
-	uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 4, checkChan)
+	uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 5, checkChan)
 	sugar.Info("DONE CYCLES")
 }

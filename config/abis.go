@@ -330,36 +330,20 @@ const BUNDLE_EXECTOR_ABI = `[
         "type": "address"
       }
     ],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_value",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_data",
-        "type": "bytes"
-      }
-    ],
-    "name": "call",
+    "inputs": [],
+    "name": "WETH",
     "outputs": [
       {
-        "internalType": "bytes",
+        "internalType": "contract IWETH",
         "name": "",
-        "type": "bytes"
+        "type": "address"
       }
     ],
-    "stateMutability": "payable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -380,20 +364,76 @@ const BUNDLE_EXECTOR_ABI = `[
         "type": "uint256[2][]"
       }
     ],
-    "name": "hoppity",
+    "name": "hi",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_new",
-        "type": "address"
+        "internalType": "uint256[]",
+        "name": "_amountIn",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "address[][]",
+        "name": "_targets",
+        "type": "address[][]"
+      },
+      {
+        "internalType": "uint256[2][][]",
+        "name": "_amountsOut",
+        "type": "uint256[2][][]"
       }
     ],
-    "name": "setWeth",
+    "name": "hi2",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_targets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "_payloads",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "hp",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_amountIn",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "address[][]",
+        "name": "_targets",
+        "type": "address[][]"
+      },
+      {
+        "internalType": "bytes[][]",
+        "name": "_payloads",
+        "type": "bytes[][]"
+      }
+    ],
+    "name": "hp2",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -416,7 +456,7 @@ const BUNDLE_EXECTOR_ABI = `[
         "type": "uint256"
       }
     ],
-    "name": "sweepERC20",
+    "name": "s",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -424,37 +464,18 @@ const BUNDLE_EXECTOR_ABI = `[
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_wethAmountToFirstMarket",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_ethAmountToCoinbase",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "_targets",
-        "type": "address[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "_payloads",
-        "type": "bytes[]"
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
       }
     ],
-    "name": "uniswapWeth",
+    "name": "setWeth",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
   }
-]`
-
+]
+`
 const PAIR_ABI = `[{
   "inputs": [],
   "payable": false,

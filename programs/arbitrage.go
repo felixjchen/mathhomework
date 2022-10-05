@@ -2,44 +2,38 @@ package programs
 
 import (
 	"arbitrage_go/blockchain"
-	"arbitrage_go/config"
 	"arbitrage_go/counter"
 	"arbitrage_go/database"
 	"arbitrage_go/logging"
 	"arbitrage_go/uniswap"
 	"arbitrage_go/util"
-	"fmt"
-	"log"
-	"math/big"
 	"math/rand"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
-
-	"github.com/chenzhijie/go-web3"
-	"github.com/chenzhijie/go-web3/eth"
-	"github.com/chenzhijie/go-web3/types"
-	"go.uber.org/zap"
 )
 
 const MAX_CHECK_SIZE = 500
 const MAX_QUERY_SIZE = 100000
 
-// 0.002 ETHER
-const BATCH_THRESHOLD = 2000000000000000
-
 func ArbitrageMain() {
-	web3 := blockchain.GetWeb3()
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	sugar := logging.GetSugar("arb")
 
-	sugar := logging.GetSugar("arb3")
+	web3 := blockchain.GetWeb3()
+
+	nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
+	if err != nil {
+		sugar.Fatal(err)
+	}
+	nounceCounter := counter.NewTSCounter(nonce)
 
 	executeChan := make(chan uniswap.Cycle)
+	batchChan := make(chan uniswap.BatchCandidate)
 	executeCounter := counter.NewTSCounter(0)
 	checkCounter := counter.NewTSCounter(0)
 
-	database := database.NewDBConn()
+	database := database.NewDBConn(sugar)
 	cycleHashes := database.GetCycleHashes()
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
@@ -108,7 +102,7 @@ func ArbitrageMain() {
 				wg := sync.WaitGroup{}
 				for _, cycle := range cycles {
 					wg.Add(1)
-					go CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar, &wg)
+					go uniswap.CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar, batchChan, &wg)
 				}
 				wg.Wait()
 			}
@@ -117,15 +111,12 @@ func ArbitrageMain() {
 	}()
 
 	go func() {
-		nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
-		if err != nil {
-			sugar.Fatal(err)
-		}
-		nounceCounter := counter.NewTSCounter(nonce)
 		for cycle := range executeChan {
-			ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+			uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
 		}
 	}()
+
+	go uniswap.StartBatchQueue(sugar, batchChan, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu)
 
 	go func() {
 		for {

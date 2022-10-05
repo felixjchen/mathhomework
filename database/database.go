@@ -1,8 +1,9 @@
 package database
 
 import (
-	"arbitrage_go/logging"
+	"arbitrage_go/config"
 	"arbitrage_go/uniswap"
+	"arbitrage_go/util"
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
@@ -24,7 +25,8 @@ type DB struct {
 const CYCLE_INDEX = "CYCLEINDEX"
 const PAIR_INDEX = "PAIRINDEX"
 
-func NewDBConn() DB {
+func NewDBConn(sugar *zap.SugaredLogger) DB {
+	db := util.Ternary(config.PROD, 0, 1)
 	client := redis.NewClient(&redis.Options{
 		Addr:         "0.0.0.0:6379",
 		Password:     "", // no password set
@@ -32,7 +34,6 @@ func NewDBConn() DB {
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	})
-	sugar := logging.GetSugar("db")
 	return DB{client, sugar}
 }
 
