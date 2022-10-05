@@ -28,10 +28,11 @@ const PAIR_INDEX = "PAIRINDEX"
 func NewDBConn(sugar *zap.SugaredLogger) DB {
 	db := util.Ternary(config.PROD, 0, 1)
 	client := redis.NewClient(&redis.Options{
-		Addr:        "0.0.0.0:6379",
-		Password:    "", // no password set
-		DB:          db, // use default DB
-		ReadTimeout: 15 * time.Second,
+		Addr:         "0.0.0.0:6379",
+		Password:     "", // no password set
+		DB:           0,  // use default DB
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 	})
 	return DB{client, sugar}
 }
