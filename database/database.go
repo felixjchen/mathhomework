@@ -26,10 +26,11 @@ const PAIR_INDEX = "PAIRINDEX"
 
 func NewDBConn() DB {
 	client := redis.NewClient(&redis.Options{
-		Addr:        "0.0.0.0:6379",
-		Password:    "", // no password set
-		DB:          0,  // use default DB
-		ReadTimeout: 15 * time.Second,
+		Addr:         "0.0.0.0:6379",
+		Password:     "", // no password set
+		DB:           0,  // use default DB
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 	})
 	sugar := logging.GetSugar("db")
 	return DB{client, sugar}

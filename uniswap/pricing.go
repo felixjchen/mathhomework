@@ -41,7 +41,7 @@ func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 		poolAddresses = append(poolAddresses, pool.Address)
 	}
 
-	STEP_SIZE := 500
+	STEP_SIZE := 1000
 	for i := 0; i < len(pools); i += STEP_SIZE {
 		j := i + STEP_SIZE
 		if j > len(pools) {

@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_CHECK_SIZE = 50
+const MAX_CHECK_SIZE = 500
 const MAX_QUERY_SIZE = 100000
 
 // 0.002 ETHER
@@ -156,6 +156,7 @@ func CheckCycleWG(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.
 		// Min on current balance
 		balanceOfMu.Lock()
 		if big.NewInt(0).Sub(amountIn, balanceOf).Sign() == 1 {
+			sugar.Info("MIN", amountIn, balanceOf)
 			amountIn = balanceOf
 		}
 		balanceOfMu.Unlock()
@@ -196,7 +197,7 @@ func CheckCycleWG(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
 					gasEstimateMu.Unlock()
-					// sugar.Info(arbProfit, netProfit)
+					sugar.Info(arbProfit, netProfit)
 					// if new(big.Int).Add(netProfit, big.NewInt(BATCH_THRESHOLD)).Sign() >= 1 {
 					// 	sugar.Info("BATCH CANDIDATE ", netProfit)
 					// }
@@ -229,6 +230,7 @@ func ExecuteCycle(cycle uniswap.Cycle, nonceCounter *counter.TSCounter, executeC
 		amountIn := uniswap.GetOptimalAmountIn(E0, E1)
 		balanceOfMu.Lock()
 		if big.NewInt(0).Sub(amountIn, balanceOf).Sign() == 1 {
+			sugar.Info("MIN", amountIn, balanceOf)
 			amountIn = balanceOf
 		}
 		balanceOfMu.Unlock()

@@ -27,7 +27,6 @@ func FindCycles() {
 
 	go func() {
 		db := database.NewDBConn()
-		// TODO MED: Thread this
 		for cycle := range checkChan {
 			db.AddCycle(cycle)
 		}

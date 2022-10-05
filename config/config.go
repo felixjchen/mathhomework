@@ -65,7 +65,7 @@ func Get() *Config {
 			if PROD {
 				PRIVATE_KEY := os.Getenv("POLYGON_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://soft-still-moon.matic.discover.quiknode.pro/8e541ee43ee71b4ca15719a9527783f010f2892f/"
+				RPC_URL_HTTP := "https://polygon-mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
 				RPC_URL_WS := "wss://ws-nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
 				CHAIN_ID := int64(137)
 
