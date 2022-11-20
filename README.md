@@ -30,21 +30,17 @@ https://github.com/chenzhijie/go-web3/blob/master/examples/contract/erc20.go
 
 # TODO 
 
-fuck need dynamic dex fees
+dynamic dex fees + more dexes
 
-can simulate transfers (hard)
+need more meaningful logging (loading bars?)
 
-flashbots
-
-more dexes
-
-remove uniswap in repo onchain
+can simulate transfers (hard) vs blacklist everything
 
 load abi from onchain folder
 
-loading bars
+remove uniswap in repo onchain
 
-unname functions
+flashbots
 
 
 ### OLD MULTICALL SNIPPED

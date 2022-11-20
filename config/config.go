@@ -28,7 +28,7 @@ import (
 // FIREBIRD_FACTORY_ADDRESS := common.HexToAddress("0x5De74546d3B86C8Df7FEEc30253865e1149818C8")  // Polygon WEIRD FEES
 // Meshswap : https://docs.meshswap.fi/developers/contract
 
-const PROD = false
+const PROD = true
 const CALL_PAIRS = false
 
 // 0.002 ETHER
@@ -78,7 +78,7 @@ func Get() *Config {
 				// WETH_ADDRESS := common.HexToAddress("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174") //  Polygon USDC
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0x9C7FfE06A4c5C58A5D60bC95baAb56F558A4dACf")     // Polygon
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x6962AD493D2fA1cA187075A2653d9CdCE4C21DD3") // Polygon
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x759eD4a2A3455FBC526c236ACbA04025B2f92113") // Polygon
 
 				QUICKSWAP_FACTORY_ADDRESS := common.HexToAddress("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32") // Mumbai and Polygon
 				// MMF_FACTORY_ADDRESS := common.HexToAddress("0x7cFB780010e9C861e03bCbC7AC12E013137D47A5")       // Polygon

@@ -4,6 +4,7 @@ import (
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
 	"arbitrage_go/util"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -58,7 +59,7 @@ func GetReservesForPairs(pools []Pair) map[Pair]Reserve {
 			res, err := contract.Call("getReservesByPairs", poolAddresses[start:end])
 			for err != nil {
 				time.Sleep(time.Second)
-				// fmt.Println("retrying getReservesByPairs, got", res)
+				fmt.Println("retrying getReservesByPairs, got", res)
 				res, err = contract.Call("getReservesByPairs", poolAddresses[start:end])
 			}
 			reserveTuples, ok := res.([][3]*big.Int)

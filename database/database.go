@@ -30,9 +30,9 @@ func NewDBConn(sugar *zap.SugaredLogger) DB {
 	client := redis.NewClient(&redis.Options{
 		Addr:         "0.0.0.0:6379",
 		Password:     "", // no password set
-		DB:           0,  // use default DB
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		DB:           db, // use default DB
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	})
 	return DB{client, sugar}
 }
