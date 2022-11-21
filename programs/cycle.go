@@ -33,6 +33,6 @@ func FindCycles() {
 	}()
 
 	sugar.Info("START CYCLES")
-	uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 5, checkChan)
+	uniswap.GetCyclesToChan(config.Get().WETH_ADDRESS, graph, 3, checkChan)
 	sugar.Info("DONE CYCLES")
 }

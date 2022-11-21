@@ -54,7 +54,7 @@ func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, targets []co
 }
 
 func GetPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
-	if config.CALL_PAIRS {
+	if config.USE_PLAIN_PAYLOAD {
 		return getCallPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
 	} else {
 		return getInterfacePayload(executor, amountIn, targets, cycleAmountsOut)

@@ -54,7 +54,7 @@ interface IWETH is IERC20 {
 
 // This contract simply calls multiple targets sequentially, ensuring WETH balance before and after
 
-contract FlashBotsMultiCall {
+contract BundleExecutor {
     address private immutable owner;
     address private immutable executor;
 

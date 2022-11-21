@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomiclabs/hardhat-etherscan");
 require("hardhat-deploy");
 require("dotenv").config();
 require("hardhat-abi-exporter");
@@ -6,6 +7,23 @@ require("hardhat-abi-exporter");
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   networks: {
+    mainnet: {
+      url: process.env.MAINNET_URL || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 1,
+    },
+    goerli: {
+      url: process.env.GOERLI_URL || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 5,
+      verify: {
+        etherscan: {
+          apiUrl: "https://api-goerli.etherscan.io",
+        },
+      },
+    },
     mumbai: {
       url: process.env.MUMBAI_URL || "",
       accounts:
@@ -50,13 +68,13 @@ module.exports = {
   },
   namedAccounts: {
     deployer: {
+      mainnet: 0,
+      goerli: 0,
       mumbai: 0,
       polygon: 0,
     },
   },
-  verify: {
-    etherscan: {
-      apiKey: process.env.ETHERSCAN_API_KEY || "",
-    },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
 };
