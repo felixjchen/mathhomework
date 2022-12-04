@@ -20,13 +20,6 @@ const MAX_CHECK_SIZE = 10000
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
 
-const ESTIMATE_TIMEOUT = 240
-
-type RoughHopGasLimit struct {
-	RoughGasLimit uint64
-	LastTimestamp time.Time
-}
-
 func ArbitrageMain() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	sugar := logging.GetSugar("arb")
@@ -89,10 +82,10 @@ func ArbitrageMain() {
 		}
 	}(&gasEstimateMu)
 
-	roughHopGasLimitMu := sync.Mutex{}
-	roughHopGasLimit := make(map[int]RoughHopGasLimit)
+	RoughHopGasLimitMu := sync.Mutex{}
+	RoughHopGasLimit := make(map[int]uniswap.RoughHopGasLimit)
 	for i := 0; i < 10; i++ {
-		roughHopGasLimit[i] = RoughHopGasLimit{0, time.Now()}
+		RoughHopGasLimit[i] = uniswap.RoughHopGasLimit{0, time.Now()}
 	}
 
 	go func() {
@@ -119,7 +112,7 @@ func ArbitrageMain() {
 				wg := sync.WaitGroup{}
 				for _, cycle := range cycles {
 					wg.Add(1)
-					go uniswap.CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, &roughHopGasLimitMu, &roughHopGasLimit, sugar, &wg)
+					go uniswap.CheckCycleWG(cycle, &pairToReserves, executeChan, &pairToReservesMu, checkCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, &RoughHopGasLimitMu, &RoughHopGasLimit, sugar, &wg)
 				}
 				wg.Wait()
 			}
