@@ -89,10 +89,12 @@ contract BundleExecutor {
 
     function hi(
         uint256 _amountIn,
+        uint256 _ethAmountToCoinbase,
         address[] calldata _targets,
         uint256[2][] calldata _amountsOut
     ) public onlyExecutor {
         uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
+
         WETH.transfer(_targets[0], _amountIn);
         uint256 n = _targets.length;
         for (uint256 i = 0; i < n - 1; i = unsafe_inc(i)) {
@@ -109,50 +111,61 @@ contract BundleExecutor {
             address(this),
             ""
         );
+
         uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(_wethBalanceAfter > _wethBalanceBefore, "not profitable");
+        require(
+            _wethBalanceAfter > _wethBalanceBefore + _ethAmountToCoinbase,
+            "not profitable"
+        );
+        if (_ethAmountToCoinbase == 0) return;
+
+        uint256 _ethBalance = address(this).balance;
+        if (_ethBalance < _ethAmountToCoinbase) {
+            WETH.withdraw(_ethAmountToCoinbase - _ethBalance);
+        }
+        block.coinbase.transfer(_ethAmountToCoinbase);
     }
 
-    function hi2(
-        uint256[] calldata _amountIn,
-        address[][] calldata _targets,
-        uint256[2][][] calldata _amountsOut
-    ) external onlyExecutor {
-        uint256 n = _amountIn.length;
-        for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
-            hi(_amountIn[i], _targets[i], _amountsOut[i]);
-        }
-    }
+    // function hi2(
+    //     uint256[] calldata _amountIn,
+    //     address[][] calldata _targets,
+    //     uint256[2][][] calldata _amountsOut
+    // ) external onlyExecutor {
+    //     uint256 n = _amountIn.length;
+    //     for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
+    //         hi(_amountIn[i], _targets[i], _amountsOut[i]);
+    //     }
+    // }
 
-    function hp(
-        uint256 _amountIn,
-        address[] calldata _targets,
-        bytes[] calldata _payloads
-    ) public onlyExecutor {
-        uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
-        bool success = WETH.transfer(_targets[0], _amountIn);
-        require(success, "f");
-        for (uint256 i = 0; i < _targets.length; i = unsafe_inc(i)) {
-            (bool _success, bytes memory _response) = _targets[i].call(
-                _payloads[i]
-            );
-            require(_success, "l");
-            _response;
-        }
-        uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(_wethBalanceAfter > _wethBalanceBefore, "np");
-    }
+    // function hp(
+    //     uint256 _amountIn,
+    //     address[] calldata _targets,
+    //     bytes[] calldata _payloads
+    // ) public onlyExecutor {
+    //     uint256 _wethBalanceBefore = WETH.balanceOf(address(this));
+    //     bool success = WETH.transfer(_targets[0], _amountIn);
+    //     require(success, "f");
+    //     for (uint256 i = 0; i < _targets.length; i = unsafe_inc(i)) {
+    //         (bool _success, bytes memory _response) = _targets[i].call(
+    //             _payloads[i]
+    //         );
+    //         require(_success, "l");
+    //         _response;
+    //     }
+    //     uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
+    //     require(_wethBalanceAfter > _wethBalanceBefore, "np");
+    // }
 
-    function hp2(
-        uint256[] calldata _amountIn,
-        address[][] calldata _targets,
-        bytes[][] calldata _payloads
-    ) external onlyExecutor {
-        uint256 n = _amountIn.length;
-        for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
-            hp(_amountIn[i], _targets[i], _payloads[i]);
-        }
-    }
+    // function hp2(
+    //     uint256[] calldata _amountIn,
+    //     address[][] calldata _targets,
+    //     bytes[][] calldata _payloads
+    // ) external onlyExecutor {
+    //     uint256 n = _amountIn.length;
+    //     for (uint256 i = 0; i < n; i = unsafe_inc(i)) {
+    //         hp(_amountIn[i], _targets[i], _payloads[i]);
+    //     }
+    // }
 
     function unsafe_inc(uint256 x) private pure returns (uint256) {
         unchecked {

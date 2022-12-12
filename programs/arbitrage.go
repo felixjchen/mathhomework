@@ -51,15 +51,15 @@ func ArbitrageMain() {
 	sugar.Info("Updated ", len(relaventPairs), " Reserves")
 
 	balanceOfMu := sync.Mutex{}
-	balanceOf := blockchain.GetWMATICBalance()
+	balanceOf := blockchain.GetWETHBalance()
 	go func(balanceOfMu *sync.Mutex) {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2 {
-				temp := blockchain.GetWMATICBalance()
+				temp := blockchain.GetWETHBalance()
 				balanceOfMu.Lock()
 				balanceOf = temp
-				sugar.Info("Updated balance: ", web3.Utils.FromWei(balanceOf))
+				sugar.Info("Updated WETH balance: ", web3.Utils.FromWei(balanceOf))
 				balanceOfMu.Unlock()
 				lastUpdate = time.Now()
 			}
@@ -120,13 +120,13 @@ func ArbitrageMain() {
 		}
 	}()
 
-	go func() {
-		for cycle := range executeChan {
-			uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
-		}
-	}()
+	// go func() {
+	// 	for cycle := range executeChan {
+	// 		uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+	// 	}
+	// }()
 
-	go uniswap.StartBatchQueue(sugar, batchChan, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu)
+	// go uniswap.StartBatchQueue(sugar, batchChan, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu)
 
 	go func() {
 		for {

@@ -11,6 +11,7 @@ import (
 	"github.com/chenzhijie/go-web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	eTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -21,7 +22,8 @@ const (
 
 func TestFlashbotSendBundleTx(t *testing.T) {
 
-	signerKey := os.Getenv("signerKey")
+	godotenv.Load()
+	signerKey := "ea0d86ce7b7c394ca92cafadb8c8b50e82820d79de32f993a78b16c0ab5b73ad"
 
 	if len(signerKey) == 0 {
 		t.Fatal("signer key or sender key is empty")
@@ -103,20 +105,27 @@ func TestFlashbotSendBundleTx(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Printf("Resp %s EffectiveGasPrice %v\n", resp, web3.Utils.FromGWei(egp))
+	targetBlockNumber := big.NewInt(int64(currentBlockNumber) + 1)
 	bundleResp, err := fb.SendBundle(
 		bundleTxs,
-		big.NewInt(int64(currentBlockNumber)+1),
+		targetBlockNumber,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("bundle resp %v\n", bundleResp)
 
+	stat, err := fb.GetBundleStats(bundleResp.BundleHash, targetBlockNumber)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("bundle stat %v\n", stat)
 }
 
 func TestGetBundleStats(t *testing.T) {
 
-	signerKey := os.Getenv("signerKey")
+	godotenv.Load()
+	signerKey := "ea0d86ce7b7c394ca92cafadb8c8b50e82820d79de32f993a78b16c0ab5b73ad"
 
 	if len(signerKey) == 0 {
 		t.Fatal("signer key or sender key is empty")
@@ -127,9 +136,9 @@ func TestGetBundleStats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bundleHash := "0x4a11aa0e0bdc321a7bbe5c96f9952cc38e38d8843b293379761d736222f8635b"
-	targetBlockNumber := big.NewInt(int64(6974433))
-	stat, err := fb.GetBunderStats(bundleHash, targetBlockNumber)
+	bundleHash := "0x68610dccc7d19e8049b05c0f305c8f698616ad9090903b43536474147a08df53"
+	targetBlockNumber := big.NewInt(int64(8119100))
+	stat, err := fb.GetBundleStats(bundleHash, targetBlockNumber)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +148,7 @@ func TestGetBundleStats(t *testing.T) {
 
 func TestGetUserStats(t *testing.T) {
 
+	godotenv.Load()
 	signerKey := os.Getenv("signerKey")
 
 	if len(signerKey) == 0 {

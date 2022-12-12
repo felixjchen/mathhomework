@@ -1,6 +1,6 @@
 package config
 
-const WMATIC_ABI = `[
+const WETH_ABI = `[
   {
     "constant": true,
     "inputs": [],
@@ -362,78 +362,14 @@ const BUNDLE_EXECTOR_ABI = `[
         "internalType": "uint256[2][]",
         "name": "_amountsOut",
         "type": "uint256[2][]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_toCoinbase",
+        "type": "uint256"
       }
     ],
     "name": "hi",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "_amountIn",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "address[][]",
-        "name": "_targets",
-        "type": "address[][]"
-      },
-      {
-        "internalType": "uint256[2][][]",
-        "name": "_amountsOut",
-        "type": "uint256[2][][]"
-      }
-    ],
-    "name": "hi2",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_amountIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "_targets",
-        "type": "address[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "_payloads",
-        "type": "bytes[]"
-      }
-    ],
-    "name": "hp",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "_amountIn",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "address[][]",
-        "name": "_targets",
-        "type": "address[][]"
-      },
-      {
-        "internalType": "bytes[][]",
-        "name": "_payloads",
-        "type": "bytes[][]"
-      }
-    ],
-    "name": "hp2",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -476,6 +412,7 @@ const BUNDLE_EXECTOR_ABI = `[
   }
 ]
 `
+
 const PAIR_ABI = `[{
   "inputs": [],
   "payable": false,

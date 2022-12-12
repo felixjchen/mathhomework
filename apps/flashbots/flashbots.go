@@ -175,7 +175,7 @@ func (fb *FlashBot) GetUserStats(blockNumber *big.Int) (*UserStats, error) {
 	return &resp.Result, nil
 }
 
-func (fb *FlashBot) GetBunderStats(bundleHash string, blockNumber *big.Int) (*BundleStats, error) {
+func (fb *FlashBot) GetBundleStats(bundleHash string, blockNumber *big.Int) (*BundleStats, error) {
 
 	type reqParam struct {
 		BundleHash  string `json:"bundleHash"`
