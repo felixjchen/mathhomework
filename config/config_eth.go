@@ -76,7 +76,7 @@ func Get() *Config {
 				WETH_ADDRESS := common.HexToAddress("0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6") //  Goerli WETH
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0xA0FCbeB907fefD8C83DAA67aa98608CfAB931A5D")
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x1CCC5b22Bbbc11Ed5DEEe4EBd88BefF4eAc6eEbe")
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x67d042A1Cf17a67467EeAFD315ff4d341E5b9e18")
 
 				// https://docs.uniswap.org/contracts/v2/reference/smart-contracts/factory
 				UNISWAP_FACTORY := common.HexToAddress("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f")

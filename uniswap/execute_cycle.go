@@ -1,14 +1,18 @@
 package uniswap
 
 import (
+	"arbitrage_go/apps/flashbots"
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
 	"arbitrage_go/counter"
+	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/chenzhijie/go-web3/eth"
 	"github.com/chenzhijie/go-web3/types"
+	eTypes "github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +45,7 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 				if err != nil {
 					panic(err)
 				}
-				data := GetPayload(cycle, executor, amountIn, new(big.Int), targets, cycleAmountsOut)
+				data := GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
 				call := &types.CallMsg{
 					From: newWeb3.Eth.Address(),
 					To:   executor.Address(),
@@ -68,22 +72,74 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 						nonceCounter.Lock()
 						defer nonceCounter.Unlock()
 						nonce := nonceCounter.Get()
-						hash, err := newWeb3.Eth.SendRawEIP1559TransactionWithNonce(
-							nonce,
+
+						tx, err := newWeb3.Eth.NewEIP1559Tx(
 							executor.Address(),
 							new(big.Int),
 							gasLimit,
 							gasTipCap,
 							gasFeeCap,
 							data,
+							nonce,
 						)
 						if err != nil {
-							panic(err)
-						} else {
+							sugar.Fatal(err)
+						}
+						bundleTxs := make([]*eTypes.Transaction, 0)
+						bundleTxs = append(bundleTxs, tx)
+
+						fb, err := flashbots.NewFlashBot(flashbots.TestRelayURL, config.Get().PRIVATE_KEY)
+						if err != nil {
+							sugar.Fatal(err)
+						}
+						currentBlockNumber, err := newWeb3.Eth.GetBlockNumber()
+						if err != nil {
+							sugar.Fatal(1, err)
+						}
+						resp, err := fb.Simulate(
+							bundleTxs,
+							big.NewInt(int64(currentBlockNumber)),
+							"latest",
+						)
+						if strings.Contains(fmt.Sprint(err), "nonce too low") {
 							nonceCounter.Inc()
 							executeCounter.TSInc()
-							sugar.Info("tx hash: ", hash)
+							return
 						}
+						sugar.Info("Resp %s", resp)
+						targetBlockNumber := big.NewInt(int64(currentBlockNumber) + 1)
+						bundleResp, err := fb.SendBundle(
+							bundleTxs,
+							targetBlockNumber,
+						)
+						if err != nil {
+							sugar.Fatal(2, err)
+						}
+						sugar.Info("bundle resp %v\n", bundleResp)
+
+						stat, err := fb.GetBundleStats(bundleResp.BundleHash, targetBlockNumber)
+						if err != nil {
+							sugar.Fatal(4, err)
+						}
+						sugar.Info("bundle stat %v\n", stat)
+
+						// hash, err := newWeb3.Eth.SendRawEIP1559TransactionWithNonce(
+						// 	nonce,
+						// 	executor.Address(),
+						// 	new(big.Int),
+						// 	gasLimit,
+						// 	gasTipCap,
+						// 	gasFeeCap,
+						// 	data,
+						// )
+						// if err != nil {
+						// 	panic(err)
+						// } else {
+						// 	nonceCounter.Inc()
+						// 	executeCounter.TSInc()
+						// 	sugar.Info("tx hash: ", hash)
+						// 	panic(1)
+						// }
 					}
 				}
 			}

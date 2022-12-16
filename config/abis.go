@@ -354,11 +354,6 @@ const BUNDLE_EXECTOR_ABI = `[
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "_ethAmountToCoinbase",
-        "type": "uint256"
-      },
-      {
         "internalType": "address[]",
         "name": "_targets",
         "type": "address[]"

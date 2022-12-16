@@ -69,7 +69,7 @@ func CheckCycleWG(cycle Cycle, pairToReserves *map[Pair]Reserve, executeChan cha
 				needsRefresh := time.Since((*roughHopGasLimit)[hopLen].LastTimestamp).Seconds() > ESTIMATE_TIMEOUT
 
 				if noTimestamp || needsRefresh {
-					data := GetPayload(cycle, executor, amountIn, new(big.Int), targets, cycleAmountsOut)
+					data := GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
 					call := &types.CallMsg{
 						From: newWeb3.Eth.Address(),
 						To:   executor.Address(),
@@ -78,7 +78,8 @@ func CheckCycleWG(cycle Cycle, pairToReserves *map[Pair]Reserve, executeChan cha
 					}
 					gasLimit, err := newWeb3.Eth.EstimateGas(call)
 					if err != nil {
-						panic(err)
+						// panic(err)
+						sugar.Info(err)
 					}
 
 					/// sometimes shit

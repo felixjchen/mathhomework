@@ -45,18 +45,18 @@ func getCallPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, targ
 	}
 	return data
 }
-func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, ethAmountToCoinbase *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
-	data, err := executor.EncodeABI("hi", amountIn, ethAmountToCoinbase, targets, cycleAmountsOut)
+func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
+	data, err := executor.EncodeABI("hi", amountIn, targets, cycleAmountsOut)
 	if err != nil {
 		panic(err)
 	}
 	return data
 }
 
-func GetPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, ethAmountToCoinbase *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
+func GetPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
 	if config.USE_PLAIN_PAYLOAD {
 		return getCallPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
 	} else {
-		return getInterfacePayload(executor, amountIn, ethAmountToCoinbase, targets, cycleAmountsOut)
+		return getInterfacePayload(executor, amountIn, targets, cycleAmountsOut)
 	}
 }

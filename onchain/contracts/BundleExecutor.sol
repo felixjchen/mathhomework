@@ -89,7 +89,6 @@ contract BundleExecutor {
 
     function hi(
         uint256 _amountIn,
-        uint256 _ethAmountToCoinbase,
         address[] calldata _targets,
         uint256[2][] calldata _amountsOut
     ) public onlyExecutor {
@@ -113,17 +112,7 @@ contract BundleExecutor {
         );
 
         uint256 _wethBalanceAfter = WETH.balanceOf(address(this));
-        require(
-            _wethBalanceAfter > _wethBalanceBefore + _ethAmountToCoinbase,
-            "not profitable"
-        );
-        if (_ethAmountToCoinbase == 0) return;
-
-        uint256 _ethBalance = address(this).balance;
-        if (_ethBalance < _ethAmountToCoinbase) {
-            WETH.withdraw(_ethAmountToCoinbase - _ethBalance);
-        }
-        block.coinbase.transfer(_ethAmountToCoinbase);
+        require(_wethBalanceAfter > _wethBalanceBefore, "not profitable");
     }
 
     // function hi2(
