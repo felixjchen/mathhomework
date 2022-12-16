@@ -1,11 +1,13 @@
 package flashbots
 
 import (
+	"arbitrage_go/config"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/chenzhijie/go-web3"
 	"github.com/chenzhijie/go-web3/types"
@@ -167,5 +169,113 @@ func TestGetUserStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Printf("user stat %v\n", stat)
+
+}
+
+func TestFlashbotSendBundleTxMine(t *testing.T) {
+
+	signerKey := "ea0d86ce7b7c394ca92cafadb8c8b50e82820d79de32f993a78b16c0ab5b73ad"
+
+	if len(signerKey) == 0 {
+		t.Fatal("signer key or sender key is empty")
+	}
+
+	web3WS, err := web3.NewWeb3(config.Get().RPC_URL_WS)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	web3, err := web3.NewWeb3(goerliInfuraProvider)
+	err = web3.Eth.SetAccount(signerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// https://github.com/chenzhijie/go-web3/blob/master/rpc/subscribe_test.go
+	_, err = web3WS.Client.Subscribe("newHeads", func(data []byte) {
+
+		web3.Eth.SetChainId(5)
+
+		currentBlockNumber, err := web3.Eth.GetBlockNumber()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("currentBlockNumber %v\n", currentBlockNumber)
+
+		mintValue := web3.Utils.ToWei(0.0001)
+
+		mintNFTData, err := hex.DecodeString("1249c58b")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bundleTxs := make([]*eTypes.Transaction, 0)
+
+		gasLimit, err := web3.Eth.EstimateGas(&types.CallMsg{
+			From:  web3.Eth.Address(),
+			To:    common.HexToAddress(goerliFlashbotMintNFTAddr),
+			Data:  mintNFTData,
+			Value: types.NewCallMsgBigInt(mintValue),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("gaslimit %v nonce %v\n", gasLimit, nonce)
+
+		mintNFTtx, err := web3.Eth.NewEIP1559Tx(
+			common.HexToAddress(goerliFlashbotMintNFTAddr),
+			mintValue, // 6a94d74f430000
+			gasLimit,
+			web3.Utils.ToGWei(0),  //
+			web3.Utils.ToGWei(30), // b2d05e00
+			mintNFTData,
+			nonce,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bundleTxs = append(bundleTxs, mintNFTtx)
+
+		fb, err := NewFlashBot(TestRelayURL, signerKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := fb.Simulate(
+			bundleTxs,
+			big.NewInt(int64(currentBlockNumber)),
+			"latest",
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		egp, err := resp.EffectiveGasPrice()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fmt.Printf("Resp %s EffectiveGasPrice %v\n", resp, web3.Utils.FromGWei(egp))
+		targetBlockNumber := big.NewInt(int64(currentBlockNumber) + 1)
+		bundleResp, err := fb.SendBundle(
+			bundleTxs,
+			targetBlockNumber,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("bundle resp %v\n", bundleResp)
+
+		// stat, err := fb.GetBundleStats(bundleResp.BundleHash, targetBlockNumber)
+		// if err != nil {
+		// 	t.Fatal(err)
+		// }
+		// fmt.Printf("bundle stat %v\n", stat)
+	})
+	<-time.After(time.Minute * 20)
 
 }

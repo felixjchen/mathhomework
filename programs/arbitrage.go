@@ -13,12 +13,12 @@ import (
 	"time"
 )
 
-const MAX_CHECK_SIZE = 10000
+const MAX_CHECK_SIZE = 1000
 
 // const MAX_QUERY_SIZE = 100000
 
 // 0.002 ETHER
-const BATCH_THRESHOLD = 2000000000000000
+// const BATCH_THRESHOLD = 2000000000000000
 
 func ArbitrageMain() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -33,7 +33,6 @@ func ArbitrageMain() {
 	nounceCounter := counter.NewTSCounter(nonce)
 
 	executeChan := make(chan uniswap.Cycle)
-	batchChan := make(chan uniswap.BatchCandidate)
 	executeCounter := counter.NewTSCounter(0)
 	checkCounter := counter.NewTSCounter(0)
 
@@ -120,13 +119,11 @@ func ArbitrageMain() {
 		}
 	}()
 
-	// go func() {
-	// 	for cycle := range executeChan {
-	// 		uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
-	// 	}
-	// }()
-
-	// go uniswap.StartBatchQueue(sugar, batchChan, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu)
+	go func() {
+		for cycle := range executeChan {
+			uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+		}
+	}()
 
 	go func() {
 		for {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"strings"
 	"sync"
 	"time"
 
@@ -70,7 +69,7 @@ func CheckCycleWG(cycle Cycle, pairToReserves *map[Pair]Reserve, executeChan cha
 				needsRefresh := time.Since((*roughHopGasLimit)[hopLen].LastTimestamp).Seconds() > ESTIMATE_TIMEOUT
 
 				if noTimestamp || needsRefresh {
-					data := GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
+					data := GetPayload(cycle, executor, amountIn, new(big.Int), targets, cycleAmountsOut)
 					call := &types.CallMsg{
 						From: newWeb3.Eth.Address(),
 						To:   executor.Address(),
@@ -78,8 +77,8 @@ func CheckCycleWG(cycle Cycle, pairToReserves *map[Pair]Reserve, executeChan cha
 						Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
 					}
 					gasLimit, err := newWeb3.Eth.EstimateGas(call)
-					for strings.Contains(fmt.Sprint(err), "json unmarshal response body") || strings.Contains(fmt.Sprint(err), "timeout") {
-						gasLimit, err = newWeb3.Eth.EstimateGas(call)
+					if err != nil {
+						panic(err)
 					}
 
 					/// sometimes shit
@@ -102,7 +101,7 @@ func CheckCycleWG(cycle Cycle, pairToReserves *map[Pair]Reserve, executeChan cha
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
 					gasEstimateMu.Unlock()
-					sugar.Info(arbProfit, netProfit)
+					// sugar.Info(arbProfit, netProfit)
 					// if new(big.Int).Add(netProfit, big.NewInt(BATCH_THRESHOLD)).Sign() >= 1 {
 					// 	sugar.Info("BATCH CANDIDATE ", netProfit)
 					// }

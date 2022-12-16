@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func getCallPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, ethAmountToCoinbase *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
+func getCallPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
 	web3 := blockchain.GetWeb3()
 	payloads := [][]byte{}
 	pool, err := web3.Eth.NewContract(config.PAIR_ABI, cycle.Edges[0].Address.String())
@@ -39,14 +39,14 @@ func getCallPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, ethA
 			payloads = append(payloads, data)
 		}
 	}
-	data, err := executor.EncodeABI("hp", amountIn, ethAmountToCoinbase, targets, payloads)
+	data, err := executor.EncodeABI("hp", amountIn, targets, payloads)
 	if err != nil {
 		panic(err)
 	}
 	return data
 }
-func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
-	data, err := executor.EncodeABI("hi", amountIn, targets, cycleAmountsOut)
+func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, ethAmountToCoinbase *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
+	data, err := executor.EncodeABI("hi", amountIn, ethAmountToCoinbase, targets, cycleAmountsOut)
 	if err != nil {
 		panic(err)
 	}
@@ -55,8 +55,8 @@ func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, targets []co
 
 func GetPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, ethAmountToCoinbase *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
 	if config.USE_PLAIN_PAYLOAD {
-		return getCallPayload(cycle, executor, amountIn, ethAmountToCoinbase, targets, cycleAmountsOut)
+		return getCallPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
 	} else {
-		return getInterfacePayload(executor, amountIn, targets, cycleAmountsOut)
+		return getInterfacePayload(executor, amountIn, ethAmountToCoinbase, targets, cycleAmountsOut)
 	}
 }

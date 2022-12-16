@@ -69,14 +69,14 @@ func Get() *Config {
 			} else {
 				PRIVATE_KEY := os.Getenv("GOERLI_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://goerli.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-				RPC_URL_WS := "wss://ws-nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
+				RPC_URL_HTTP := "https://goerli.infura.io/v3/da3a20d54a954e25b4d1af6cf3439175"
+				RPC_URL_WS := "wss://goerli.infura.io/ws/v3/da3a20d54a954e25b4d1af6cf3439175"
 				CHAIN_ID := int64(5)
 
 				WETH_ADDRESS := common.HexToAddress("0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6") //  Goerli WETH
 
 				FLASH_QUERY_ADDRESS := common.HexToAddress("0xA0FCbeB907fefD8C83DAA67aa98608CfAB931A5D")
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x315B687D724626d84bD8dD0d816E1BC1A89b7346")
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x1CCC5b22Bbbc11Ed5DEEe4EBd88BefF4eAc6eEbe")
 
 				// https://docs.uniswap.org/contracts/v2/reference/smart-contracts/factory
 				UNISWAP_FACTORY := common.HexToAddress("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f")
