@@ -35,7 +35,7 @@ func main() {
 		done <- true
 	}()
 
-	fmt.Println("awaiting signal")
+	fmt.Println("awaiting cancel signal")
 	<-done
 	fmt.Println("exiting")
 }

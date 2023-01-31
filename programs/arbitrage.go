@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"math/rand"
 	"runtime"
 	"strings"
 	"sync"
@@ -23,7 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_CHECK_SIZE = 10000
+const MAX_CHECK_SIZE = 100
 
 // const MAX_QUERY_SIZE = 100000
 
@@ -56,8 +55,9 @@ func ArbitrageMain() {
 
 	database := database.NewDBConn(sugar)
 	cycleHashes := database.GetCycleHashes()
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
+	sugar.Info("Found ", len(cycleHashes), " cycles")
+	// rand.Seed(time.Now().UnixNano())
+	// rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
 
 	relaventPairs := database.GetPairs()
 	sugar.Info("Found ", len(relaventPairs), " relavent pairs")
