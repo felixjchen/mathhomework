@@ -11,6 +11,8 @@ import (
 const PROD = false
 const USE_PLAIN_PAYLOAD = false
 
+const MAX_CYCLE_SIZE = 5
+
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
 const MAX_BATCH_SIZE = 4
@@ -49,17 +51,20 @@ func Get() *Config {
 			if PROD {
 				PRIVATE_KEY := os.Getenv("MAINNET_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://mainnet.infura.io/v3/1de294ccc0da4f2ab105c9770ab3b962"
-				RPC_URL_WS := "wss://ws-nd-769-892-956.p2pify.com/5d802cc6f6c7447316b9fa2684b79023"
+				RPC_URL_HTTP := "https://mainnet.infura.io/v3/da3a20d54a954e25b4d1af6cf3439175"
+				RPC_URL_WS := "wss://mainnet.infura.io/ws/v3/da3a20d54a954e25b4d1af6cf3439175"
 				CHAIN_ID := int64(1)
 
-				WETH_ADDRESS := common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270") //  Polygon WMATIC
-				// WETH_ADDRESS := common.HexToAddress("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174") //  Polygon USDC
+				WETH_ADDRESS := common.HexToAddress("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
 
-				FLASH_QUERY_ADDRESS := common.HexToAddress("0x9C7FfE06A4c5C58A5D60bC95baAb56F558A4dACf")     // Polygon
-				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x759eD4a2A3455FBC526c236ACbA04025B2f92113") // Polygon
+				FLASH_QUERY_ADDRESS := common.HexToAddress("0x9C7FfE06A4c5C58A5D60bC95baAb56F558A4dACf")
+				BUNDLE_EXECUTOR_ADDRESS := common.HexToAddress("0x3060307BaDA5370D2DbF2f52640CC91975394de3")
 
-				UNISWAPV2_FACTORIES := []common.Address{}
+				// https://docs.uniswap.org/contracts/v2/reference/smart-contracts/factory
+				UNISWAP_FACTORY := common.HexToAddress("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f")
+				//https://docs.sushi.com/docs/Developers/Deployment%20Addresses
+				SUSHISWAP_FACTORY := common.HexToAddress("0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac")
+				UNISWAPV2_FACTORIES := []common.Address{UNISWAP_FACTORY, SUSHISWAP_FACTORY}
 
 				// EMPTY FOR NOW
 				UNISWAPV2_ROUTER02S := []common.Address{}

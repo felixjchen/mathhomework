@@ -30,6 +30,7 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 			amountIn = balanceOf
 		}
 		balanceOfMu.Unlock()
+		// sugar.Info("Estimated Profit ", newWeb3.Utils.FromWei(amountIn), newWeb3.Utils.FromWei(arbProfit))
 
 		if amountIn.Sign() == 1 {
 			amountsOut := GetAmountsOutCycle(pairToReserves, amountIn, cycle)
@@ -56,7 +57,7 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 				gasLimit, err := newWeb3.Eth.EstimateGas(call)
 
 				if err != nil {
-					sugar.Error("ERROR IN EXECUTE Q")
+					sugar.Error("ERROR IN EXECUTE Q: ", newWeb3.Utils.FromWei(arbProfit))
 					sugar.Error(err)
 				} else {
 					gasEstimateMu.Lock()
@@ -65,7 +66,7 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 					gasEstimateMu.Unlock()
 
 					if netProfit.Sign() == 1 {
-						sugar.Info("Estimated Profit ", cycle.Edges, arbProfit, " SUB GAS ", netProfit)
+						sugar.Info("Estimated Profit ", cycle.Edges, newWeb3.Utils.FromWei(arbProfit), " SUB GAS ", newWeb3.Utils.FromWei(netProfit))
 						gasTipCap := gasEstimate.MaxPriorityFeePerGas
 						gasFeeCap := gasEstimate.MaxFeePerGas
 
