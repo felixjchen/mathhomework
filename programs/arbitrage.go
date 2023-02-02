@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"math/rand"
 	"runtime"
 	"strings"
 	"sync"
@@ -22,14 +23,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_CHECK_SIZE = 100
+const MAX_CHECK_SIZE = 10000
+const ESTIMATE_TIMEOUT = 2
 
 // const MAX_QUERY_SIZE = 100000
 
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
-
-const ESTIMATE_TIMEOUT = 240
 
 type RoughHopGasLimit struct {
 	RoughGasLimit uint64
@@ -56,8 +56,8 @@ func ArbitrageMain() {
 	database := database.NewDBConn(sugar)
 	cycleHashes := database.GetCycleHashes()
 	sugar.Info("Found ", len(cycleHashes), " cycles")
-	// rand.Seed(time.Now().UnixNano())
-	// rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(cycleHashes), func(i, j int) { cycleHashes[i], cycleHashes[j] = cycleHashes[j], cycleHashes[i] })
 
 	relaventPairs := database.GetPairs()
 	sugar.Info("Found ", len(relaventPairs), " relavent pairs")
@@ -232,7 +232,7 @@ func CheckCycleWG(cycle uniswap.Cycle, pairToReserves *map[uniswap.Pair]uniswap.
 					maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
 					netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
 					gasEstimateMu.Unlock()
-					sugar.Info(arbProfit, netProfit)
+					// sugar.Info(arbProfit, netProfit)
 					// if new(big.Int).Add(netProfit, big.NewInt(BATCH_THRESHOLD)).Sign() >= 1 {
 					// 	sugar.Info("BATCH CANDIDATE ", netProfit)
 					// }

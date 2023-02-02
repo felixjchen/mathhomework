@@ -30,7 +30,7 @@ import (
 
 const PROD = true
 const CALL_PAIRS = false
-const MAX_CYCLE_SIZE = 5
+const MAX_CYCLE_SIZE = 4
 
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
