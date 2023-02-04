@@ -139,7 +139,24 @@ func ArbitrageMain() {
 
 	go func() {
 		for cycle := range executeChan {
+
+			temp := uniswap.GetReservesForPairs(relaventPairs)
+			pairToReservesMu.Lock()
+			for pair, reserve := range temp {
+				pairToReserves[pair] = reserve
+			}
+			pairToReservesMu.Unlock()
+			sugar.Info("Updated: ", len(relaventPairs), " relaventPairs reserves")
+
 			uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+
+			temp = uniswap.GetReservesForPairs(relaventPairs)
+			pairToReservesMu.Lock()
+			for pair, reserve := range temp {
+				pairToReserves[pair] = reserve
+			}
+			pairToReservesMu.Unlock()
+			sugar.Info("Updated: ", len(relaventPairs), " relaventPairs reserves")
 		}
 	}()
 

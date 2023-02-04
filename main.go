@@ -11,12 +11,16 @@ import (
 
 func main() {
 	arbitragePtr := flag.Bool("arb", false, "arbitrage program")
+	arbitragePornPtr := flag.Bool("arb_porn", false, "arbitrage porn program")
 	cyclePtr := flag.Bool("cycle", false, "cycle detection program")
 	backrunPtr := flag.Bool("br", false, "backrun program")
 	flag.Parse()
 
 	if *arbitragePtr {
 		go programs.ArbitrageMain()
+	}
+	if *arbitragePornPtr {
+		go programs.ArbitragePornMain()
 	}
 	if *cyclePtr {
 		go programs.FindCycles()
