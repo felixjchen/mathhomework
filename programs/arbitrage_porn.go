@@ -9,15 +9,18 @@ import (
 	"math/big"
 	"runtime"
 
+	"github.com/chenzhijie/go-web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func cloneD(D map[common.Address]OptimalPath) map[common.Address]OptimalPath {
 	clone := make(map[common.Address]OptimalPath)
 	for k, o := range D {
+		// We might have cloning problems at pairPath
 		clone[k] = OptimalPath{
-			path:     o.path,
-			amountAt: o.amountAt,
+			tokenPath: o.tokenPath,
+			pairPath:  o.pairPath,
+			amountAt:  o.amountAt,
 		}
 	}
 	return clone
@@ -42,8 +45,9 @@ func getV(allPairs []uniswap.Pair) []common.Address {
 }
 
 type OptimalPath struct {
-	path     []common.Address
-	amountAt *big.Int
+	tokenPath []common.Address
+	pairPath  []uniswap.Pair
+	amountAt  *big.Int
 }
 
 func getE(V []common.Address, allPairs []uniswap.Pair) map[common.Address]map[common.Address][]uniswap.Pair {
@@ -80,8 +84,9 @@ func ArbitragePornMain() {
 
 	D := make(map[common.Address]OptimalPath)
 	D[WETH] = OptimalPath{
-		path:     []common.Address{WETH},
-		amountAt: WETHIn,
+		tokenPath: []common.Address{WETH},
+		pairPath:  []uniswap.Pair{},
+		amountAt:  WETHIn,
 	}
 
 	for i := 0; i < MPL; i++ {
@@ -91,19 +96,31 @@ func ArbitragePornMain() {
 				for _, pair := range pairs {
 					amountAtV := uniswap.GetAmountOutToken(x, optimalPathX.amountAt, pair, pairToReserves[pair])
 
-					_, exists := D[v]
-					// no repeats and hop doesn't fail
-					if !exists || new(big.Int).Sub(amountAtV, D[v].amountAt).Sign() == 1 {
+					if _, exists := D[v]; !exists {
 						D[v] = OptimalPath{
-							path:     append(optimalPathX.path, v),
-							amountAt: amountAtV,
+							tokenPath: append(optimalPathX.tokenPath, v),
+							pairPath:  []uniswap.Pair{pair},
+							amountAt:  amountAtV,
 						}
+						continue
+					}
+					// data := uniswap.GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
+					// best and no repeats and hop doesn't fail
+					best := new(big.Int).Sub(amountAtV, D[v].amountAt).Sign() == 1
+					if best {
+						D[v] = OptimalPath{
+							tokenPath: append(optimalPathX.tokenPath, v),
+							pairPath:  append(optimalPathX.pairPath, pair),
+							amountAt:  amountAtV,
+						}
+						continue
 					}
 				}
 			}
 		}
 	}
 	fmt.Println("DONE")
-	fmt.Println(D[WETH].path)
-	fmt.Println(WETHIn, D[WETH].amountAt)
+	fmt.Println("TOKENPATH: ", D[WETH].tokenPath)
+	fmt.Println("PAIRPATH: ", D[WETH].pairPath)
+	fmt.Println("PROFIT ", utils.NewUtils().FromWei(new(big.Int).Sub(D[WETH].amountAt, WETHIn)), "ETHER")
 }
