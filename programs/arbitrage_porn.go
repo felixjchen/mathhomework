@@ -117,7 +117,7 @@ func ArbitragePornMain() {
 	MPL := 2
 
 	WETH := config.Get().WETH_ADDRESS
-	WETHIn := blockchain.GetWMETHBalance()
+	WETHIn := blockchain.GetWETHBalance()
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
 
 	D := make(map[common.Address]OptimalPath)
