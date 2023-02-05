@@ -29,8 +29,8 @@ import (
 // Meshswap : https://docs.meshswap.fi/developers/contract
 
 const PROD = false
-const CALL_PAIRS = false
-const MAX_CYCLE_SIZE = 4
+const USE_PLAIN_PAYLOAD = false
+const MAX_CYCLE_SIZE = 5
 
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000
@@ -118,7 +118,8 @@ func Get() *Config {
 			} else {
 				PRIVATE_KEY := os.Getenv("MUMBAI_PRIVATE_KEY")
 
-				RPC_URL_HTTP := "https://polygon-mumbai.infura.io/v3/75719af97abe4d9aa033c21c65d33aaa"
+				// RPC_URL_HTTP := "https://polygon-mumbai.infura.io/v3/75719af97abe4d9aa033c21c65d33aaa"
+				RPC_URL_HTTP := "https://polygon-mumbai.blockpi.network/v1/rpc/public"
 				RPC_URL_WS := "wss://ws-nd-615-584-120.p2pify.com/9b5b74c9c7e211544e7b23eee465031d"
 				CHAIN_ID := int64(80001)
 
