@@ -38,7 +38,7 @@ func GetWeb3() *web3.Web3 {
 	return Web3
 }
 
-func GetWMATICBalance() *big.Int {
+func GetWMETHBalance() *big.Int {
 	web3 := GetWeb3()
 	wmatic, _ := web3.Eth.NewContract(config.WMATIC_ABI, config.Get().WETH_ADDRESS.Hex())
 	balanceOfInterface, err := wmatic.Call("balanceOf", config.Get().BUNDLE_EXECUTOR_ADDRESS)

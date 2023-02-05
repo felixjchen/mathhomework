@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_CHECK_SIZE = 10000
+const MAX_CHECK_SIZE = 100000
 const ESTIMATE_TIMEOUT = 2
 
 // const MAX_QUERY_SIZE = 100000
@@ -68,12 +68,12 @@ func ArbitrageMain() {
 	sugar.Info("Updated ", len(relaventPairs), " Reserves")
 
 	balanceOfMu := sync.Mutex{}
-	balanceOf := blockchain.GetWMATICBalance()
+	balanceOf := blockchain.GetWMETHBalance()
 	go func(balanceOfMu *sync.Mutex) {
 		lastUpdate := time.Now()
 		for {
 			if time.Since(lastUpdate).Seconds() >= 2 {
-				temp := blockchain.GetWMATICBalance()
+				temp := blockchain.GetWMETHBalance()
 				balanceOfMu.Lock()
 				balanceOf = temp
 				sugar.Info("Updated balance: ", web3.Utils.FromWei(balanceOf))
