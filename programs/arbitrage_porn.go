@@ -130,9 +130,20 @@ func ArbitragePornMain() {
 	for i := 1; i < MPL; i++ {
 		fmt.Println("CHECKING MAX NUMBER OF HOPS: ", i)
 		oldD := cloneD(D)
+
+		totalPairs := 0
+		j := 0
+		for x := range oldD {
+			for _, pairs := range E[x] {
+				totalPairs += len(pairs)
+			}
+		}
+
 		for x, optimalPathX := range oldD {
 			for v, pairs := range E[x] {
 				for _, pair := range pairs {
+					fmt.Println(j*100/totalPairs, "% for this hop count")
+					j += 1
 					tokenPath := append(optimalPathX.tokenPath, v)
 					pairPath := append(optimalPathX.pairPath, pair)
 					cycle := uniswap.Cycle{
@@ -147,7 +158,6 @@ func ArbitragePornMain() {
 					if amountIn.Sign() != 1 {
 						continue
 					}
-
 					amountsOut := uniswap.GetAmountsOutCycle(pairToReserves, amountIn, cycle)
 					amountAtV := amountsOut[len(amountsOut)-1]
 					diffAtV := new(big.Int).Sub(amountAtV, amountIn)
@@ -242,17 +252,11 @@ func ArbitragePornMain() {
 	fmt.Println("DONE")
 	fmt.Println("TOKENPATH: ", D[WETH].tokenPath)
 	fmt.Println("PAIRPATH: ", D[WETH].pairPath)
-	fmt.Println("PROFIT ", utils.NewUtils().FromWei(new(big.Int).Sub(D[WETH].diffAt, amountIn)), "ETHER")
+	arbProfit := new(big.Int).Sub(D[WETH].diffAt, amountIn)
+	fmt.Println("PROFIT ", utils.NewUtils().FromWei(arbProfit), "ETHER")
 	// execute
 	{
 		web3 := blockchain.GetWeb3()
-
-		// nonce, err := web3.Eth.GetNonce(web3.Eth.Address(), nil)
-		// if err != nil {
-		// 	sugar.Fatal(err)
-		// }
-		// nounceCounter := counter.NewTSCounter(nonce)
-
 		// run bundle
 		executor, err := web3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
 		if err != nil {
@@ -276,18 +280,25 @@ func ArbitragePornMain() {
 		gasEstimate := blockchain.GetGasEstimate()
 		gasTipCap := gasEstimate.MaxPriorityFeePerGas
 		gasFeeCap := gasEstimate.MaxFeePerGas
-		hash, err := web3.Eth.SendRawEIP1559Transaction(
-			executor.Address(),
-			new(big.Int),
-			gasLimit,
-			gasTipCap,
-			gasFeeCap,
-			data,
-		)
-		if err != nil {
-			panic(err)
-		} else {
-			sugar.Info("tx hash: ", hash)
+
+		maxGasWei := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasEstimate.MaxFeePerGas)
+		netProfit := new(big.Int).Sub(arbProfit, maxGasWei)
+
+		if netProfit.Sign() == 1 {
+			sugar.Info("Estimated Profit ", cycle.Edges, arbProfit, " SUB GAS ", netProfit)
+			hash, err := web3.Eth.SendRawEIP1559Transaction(
+				executor.Address(),
+				new(big.Int),
+				gasLimit,
+				gasTipCap,
+				gasFeeCap,
+				data,
+			)
+			if err != nil {
+				panic(err)
+			} else {
+				sugar.Info("tx hash: ", hash)
+			}
 		}
 	}
 }
