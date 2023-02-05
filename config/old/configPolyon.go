@@ -28,8 +28,9 @@ import (
 // FIREBIRD_FACTORY_ADDRESS := common.HexToAddress("0x5De74546d3B86C8Df7FEEc30253865e1149818C8")  // Polygon WEIRD FEES
 // Meshswap : https://docs.meshswap.fi/developers/contract
 
-const PROD = true
+const PROD = false
 const CALL_PAIRS = false
+const MAX_CYCLE_SIZE = 4
 
 // 0.002 ETHER
 const BATCH_THRESHOLD = 2000000000000000

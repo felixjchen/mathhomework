@@ -95,6 +95,11 @@ func GetAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *b
 	return numerator.Div(numerator, denominator)
 }
 
+func GetAmountOutToken(tokenIn common.Address, amountIn *big.Int, pair Pair, reserve Reserve) *big.Int {
+	reserveIn, reserveOut := SortReserves(tokenIn, pair, reserve)
+	return GetAmountOut(amountIn, reserveIn, reserveOut)
+}
+
 func GetAmountsOut(pairMap map[common.Address]map[common.Address]Pair, pairToReserves map[Pair]Reserve, amountIn *big.Int, path []common.Address) []*big.Int {
 	amounts := []*big.Int{amountIn}
 	for i := 0; i < len(path)-1; i++ {
