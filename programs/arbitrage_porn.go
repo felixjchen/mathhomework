@@ -6,9 +6,12 @@ import (
 	"arbitrage_go/logging"
 	"arbitrage_go/uniswap"
 	"fmt"
+	"log"
 	"math/big"
 	"runtime"
 
+	"github.com/chenzhijie/go-web3"
+	"github.com/chenzhijie/go-web3/types"
 	"github.com/chenzhijie/go-web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -44,12 +47,6 @@ func getV(allPairs []uniswap.Pair) []common.Address {
 	return V
 }
 
-type OptimalPath struct {
-	tokenPath []common.Address
-	pairPath  []uniswap.Pair
-	amountAt  *big.Int
-}
-
 func getE(V []common.Address, allPairs []uniswap.Pair) map[common.Address]map[common.Address][]uniswap.Pair {
 	E := make(map[common.Address]map[common.Address][]uniswap.Pair)
 	for _, v := range V {
@@ -61,6 +58,47 @@ func getE(V []common.Address, allPairs []uniswap.Pair) map[common.Address]map[co
 	}
 
 	return E
+}
+
+func getSimulate(tokenPath []common.Address, pairPath []uniswap.Pair, amountIn *big.Int, pairToReserves *map[uniswap.Pair]uniswap.Reserve) bool {
+
+	// NOOOO
+	newWeb3, err := web3.NewWeb3(config.Get().RPC_URL_HTTP)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
+	newWeb3.Eth.SetChainId(config.Get().CHAIN_ID)
+	newWeb3.Eth.SetAccount(config.Get().PRIVATE_KEY)
+
+	cycle := uniswap.Cycle{
+		Tokens: tokenPath,
+		Edges:  pairPath,
+	}
+	amountsOut := uniswap.GetAmountsOutCycle(*pairToReserves, amountIn, cycle)
+	targets := uniswap.GetCycleTargets(cycle)
+	cycleAmountsOut := uniswap.GetCycleAmountsOut(cycle, amountsOut)
+	executor, err := newWeb3.Eth.NewContract(config.BUNDLE_EXECTOR_ABI, config.Get().BUNDLE_EXECUTOR_ADDRESS.Hex())
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
+	data := uniswap.GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
+	call := &types.CallMsg{
+		From: newWeb3.Eth.Address(),
+		To:   executor.Address(),
+		Data: data,
+		Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
+	}
+	_, err = newWeb3.Eth.EstimateGas(call)
+	fmt.Println(err)
+	return err == nil
+}
+
+type OptimalPath struct {
+	tokenPath []common.Address
+	pairPath  []uniswap.Pair
+	amountAt  *big.Int
 }
 
 func ArbitragePornMain() {
@@ -105,12 +143,17 @@ func ArbitragePornMain() {
 						continue
 					}
 					// data := uniswap.GetPayload(cycle, executor, amountIn, targets, cycleAmountsOut)
-					// best and no repeats and hop doesn't fail
+					// best and no repeats and simulate
+					tokenPath := append(optimalPathX.tokenPath, v)
+					pairPath := append(optimalPathX.pairPath, pair)
 					best := new(big.Int).Sub(amountAtV, D[v].amountAt).Sign() == 1
-					if best {
+					noRepeats := true
+					simulate := getSimulate(tokenPath, pairPath, WETHIn, &pairToReserves)
+					if best && noRepeats && simulate {
+						fmt.Println("FOUND NEW BEST PATH FOR ", v)
 						D[v] = OptimalPath{
-							tokenPath: append(optimalPathX.tokenPath, v),
-							pairPath:  append(optimalPathX.pairPath, pair),
+							tokenPath: tokenPath,
+							pairPath:  pairPath,
 							amountAt:  amountAtV,
 						}
 						continue
