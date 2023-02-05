@@ -16,10 +16,8 @@ import (
 const MAX_CHECK_SIZE = 100000
 const ESTIMATE_TIMEOUT = 2
 
-// const MAX_QUERY_SIZE = 100000
-
 // 0.002 ETHER
-const BATCH_THRESHOLD = 2000000000000000
+// const BATCH_THRESHOLD = 2000000000000000
 
 type RoughHopGasLimit struct {
 	RoughGasLimit uint64
@@ -137,7 +135,15 @@ func ArbitrageMain() {
 			pairToReservesMu.Unlock()
 			sugar.Info("Updated: ", len(relaventPairs), " relaventPairs reserves")
 
-			uniswap.ExecuteCycle(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+			uniswap.ExecuteCycleOnChain(cycle, nounceCounter, executeCounter, gasEstimate, &gasEstimateMu, balanceOf, &balanceOfMu, sugar)
+
+			temp = uniswap.GetReservesForPairs(relaventPairs)
+			pairToReservesMu.Lock()
+			for pair, reserve := range temp {
+				pairToReserves[pair] = reserve
+			}
+			pairToReservesMu.Unlock()
+			sugar.Info("Updated: ", len(relaventPairs), " relaventPairs reserves")
 
 		}
 	}()
