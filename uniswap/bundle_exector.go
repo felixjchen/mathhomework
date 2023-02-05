@@ -45,6 +45,7 @@ func getCallPayload(cycle Cycle, executor *eth.Contract, amountIn *big.Int, targ
 	}
 	return data
 }
+
 func getInterfacePayload(executor *eth.Contract, amountIn *big.Int, targets []common.Address, cycleAmountsOut [][2]*big.Int) []byte {
 	data, err := executor.EncodeABI("hi", amountIn, targets, cycleAmountsOut)
 	if err != nil {

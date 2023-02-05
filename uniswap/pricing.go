@@ -154,6 +154,10 @@ func GetE0E1(R0 *big.Int, R1 *big.Int, R1_ *big.Int, R2 *big.Int) (*big.Int, *bi
 }
 
 func GetE0E1ForCycle(cycle Cycle, pairToReserves map[Pair]Reserve) (*big.Int, *big.Int) {
+	if len(cycle.Edges) == 1 {
+		return SortReserves(cycle.Tokens[0], cycle.Edges[0], pairToReserves[cycle.Edges[0]])
+	}
+
 	E0, E1 := new(big.Int), new(big.Int)
 	init := false
 	// E edges, E-1 virtual pools

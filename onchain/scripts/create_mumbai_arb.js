@@ -47,9 +47,9 @@ async function main() {
   const [signer] = await hre.ethers.getSigners();
   await ERC20.mint(signer.address, ethers.utils.parseEther("99999"));
   await ERC20.mint(QS_PAIR_ADDRESS, ethers.utils.parseEther("200"));
-  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
-
   await WMATIC.transfer(QS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
+
+  await ERC20.mint(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
   await WMATIC.transfer(SS_PAIR_ADDRESS, ethers.utils.parseEther("0.001"));
 
   await (await QS_PAIR.sync()).wait();

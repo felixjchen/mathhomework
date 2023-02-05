@@ -372,6 +372,29 @@ const BUNDLE_EXECTOR_ABI = `[
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_targets",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[2][]",
+        "name": "_amountsOut",
+        "type": "uint256[2][]"
+      }
+    ],
+    "name": "hi_view",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "contract IERC20",
         "name": "token",
         "type": "address"
@@ -405,8 +428,7 @@ const BUNDLE_EXECTOR_ABI = `[
     "stateMutability": "nonpayable",
     "type": "function"
   }
-]
-`
+]`
 
 const PAIR_ABI = `[{
   "inputs": [],

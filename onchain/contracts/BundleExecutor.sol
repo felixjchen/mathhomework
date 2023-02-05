@@ -115,6 +115,29 @@ contract BundleExecutor {
         require(_wethBalanceAfter > _wethBalanceBefore, "not profitable");
     }
 
+    function hi_view(
+        uint256 _amountIn,
+        address[] calldata _targets,
+        uint256[2][] calldata _amountsOut
+    ) public onlyExecutor {
+        WETH.transfer(_targets[0], _amountIn);
+        uint256 n = _targets.length;
+        for (uint256 i = 0; i < n - 1; i = unsafe_inc(i)) {
+            IUniswapV2Pair(_targets[i]).swap(
+                _amountsOut[i][0],
+                _amountsOut[i][1],
+                _targets[i + 1],
+                ""
+            );
+        }
+        IUniswapV2Pair(_targets[n - 1]).swap(
+            _amountsOut[n - 1][0],
+            _amountsOut[n - 1][1],
+            address(this),
+            ""
+        );
+    }
+
     // function hi2(
     //     uint256[] calldata _amountIn,
     //     address[][] calldata _targets,
