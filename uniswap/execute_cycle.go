@@ -1,6 +1,7 @@
 package uniswap
 
 import (
+	"arbitrage_go/apps/flashbots"
 	"arbitrage_go/blockchain"
 	"arbitrage_go/config"
 	"arbitrage_go/counter"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/chenzhijie/go-web3/eth"
 	"github.com/chenzhijie/go-web3/types"
+	eTypes "github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +30,7 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 			amountIn = balanceOf
 		}
 		balanceOfMu.Unlock()
+		// sugar.Info("Estimated Profit ", newWeb3.Utils.FromWei(amountIn), newWeb3.Utils.FromWei(arbProfit))
 
 		if amountIn.Sign() == 1 {
 			amountsOut := GetAmountsOutCycle(pairToReserves, amountIn, cycle)
@@ -50,13 +53,11 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 					Data: data,
 					Gas:  types.NewCallMsgBigInt(big.NewInt(types.MAX_GAS_LIMIT)),
 				}
+
 				gasLimit, err := newWeb3.Eth.EstimateGas(call)
-				for strings.Contains(fmt.Sprint(err), "json unmarshal response body") || strings.Contains(fmt.Sprint(err), "timeout") {
-					gasLimit, err = newWeb3.Eth.EstimateGas(call)
-				}
 
 				if err != nil {
-					sugar.Error("ERROR IN EXECUTE Q")
+					sugar.Error("ERROR IN EXECUTE Q: ", newWeb3.Utils.FromWei(arbProfit))
 					sugar.Error(err)
 				} else {
 					gasEstimateMu.Lock()
@@ -65,29 +66,81 @@ func ExecuteCycle(cycle Cycle, nonceCounter *counter.TSCounter, executeCounter *
 					gasEstimateMu.Unlock()
 
 					if netProfit.Sign() == 1 {
-						sugar.Info("Estimated Profit ", cycle.Edges, arbProfit, " SUB GAS ", netProfit)
+						sugar.Info("Estimated Profit ", cycle.Edges, newWeb3.Utils.FromWei(arbProfit), " SUB GAS ", newWeb3.Utils.FromWei(netProfit))
 						gasTipCap := gasEstimate.MaxPriorityFeePerGas
 						gasFeeCap := gasEstimate.MaxFeePerGas
 
 						nonceCounter.Lock()
 						defer nonceCounter.Unlock()
 						nonce := nonceCounter.Get()
-						hash, err := newWeb3.Eth.SendRawEIP1559TransactionWithNonce(
-							nonce,
+
+						tx, err := newWeb3.Eth.NewEIP1559Tx(
 							executor.Address(),
 							new(big.Int),
 							gasLimit,
 							gasTipCap,
 							gasFeeCap,
 							data,
+							nonce,
 						)
 						if err != nil {
-							fmt.Println("PANIC", err)
-						} else {
+							sugar.Fatal(err)
+						}
+						bundleTxs := make([]*eTypes.Transaction, 0)
+						bundleTxs = append(bundleTxs, tx)
+
+						fb, err := flashbots.NewFlashBot(flashbots.TestRelayURL, config.Get().PRIVATE_KEY)
+						if err != nil {
+							sugar.Fatal(err)
+						}
+						currentBlockNumber, err := newWeb3.Eth.GetBlockNumber()
+						if err != nil {
+							sugar.Fatal(1, err)
+						}
+						resp, err := fb.Simulate(
+							bundleTxs,
+							big.NewInt(int64(currentBlockNumber)),
+							"latest",
+						)
+						if strings.Contains(fmt.Sprint(err), "nonce too low") {
 							nonceCounter.Inc()
 							executeCounter.TSInc()
-							sugar.Info("tx hash: ", hash)
+							return
 						}
+						sugar.Info("Resp %s", resp)
+						targetBlockNumber := big.NewInt(int64(currentBlockNumber) + 1)
+						bundleResp, err := fb.SendBundle(
+							bundleTxs,
+							targetBlockNumber,
+						)
+						if err != nil {
+							sugar.Fatal(2, err)
+						}
+						sugar.Info("bundle resp %v\n", bundleResp)
+
+						stat, err := fb.GetBundleStats(bundleResp.BundleHash, targetBlockNumber)
+						if err != nil {
+							sugar.Fatal(4, err)
+						}
+						sugar.Info("bundle stat %v\n", stat)
+
+						// hash, err := newWeb3.Eth.SendRawEIP1559TransactionWithNonce(
+						// 	nonce,
+						// 	executor.Address(),
+						// 	new(big.Int),
+						// 	gasLimit,
+						// 	gasTipCap,
+						// 	gasFeeCap,
+						// 	data,
+						// )
+						// if err != nil {
+						// 	panic(err)
+						// } else {
+						// 	nonceCounter.Inc()
+						// 	executeCounter.TSInc()
+						// 	sugar.Info("tx hash: ", hash)
+						// 	panic(1)
+						// }
 					}
 				}
 			}

@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/UniswapV2QueryBundler.sol": {
+      "content": "//SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.9;\n\npragma experimental ABIEncoderV2;\n\ninterface IUniswapV2Pair {\n    function token0() external view returns (address);\n\n    function token1() external view returns (address);\n\n    function getReserves()\n        external\n        view\n        returns (\n            uint112 reserve0,\n            uint112 reserve1,\n            uint32 blockTimestampLast\n        );\n}\n\nabstract contract UniswapV2Factory {\n    mapping(address => mapping(address => address)) public getPair;\n    address[] public allPairs;\n\n    function allPairsLength() external view virtual returns (uint256);\n}\n\n// In order to quickly load up data from Uniswap-like market, this contract allows easy iteration with a single eth_call\ncontract UniswapV2QueryBundler {\n    function getReservesByPairs(IUniswapV2Pair[] calldata _pairs)\n        external\n        view\n        returns (uint256[3][] memory)\n    {\n        uint256[3][] memory result = new uint256[3][](_pairs.length);\n        for (uint256 i = 0; i < _pairs.length; i++) {\n            (result[i][0], result[i][1], result[i][2]) = _pairs[i]\n                .getReserves();\n        }\n        return result;\n    }\n\n    function getAllPairsLength(UniswapV2Factory _uniswapFactory)\n        external\n        view\n        returns (uint256)\n    {\n        uint256 _allPairsLength = _uniswapFactory.allPairsLength();\n        return _allPairsLength;\n    }\n\n    function getPairsByIndexRange(\n        UniswapV2Factory _uniswapFactory,\n        uint256 _start,\n        uint256 _stop\n    ) external view returns (address[3][] memory) {\n        uint256 _allPairsLength = _uniswapFactory.allPairsLength();\n        if (_stop > _allPairsLength) {\n            _stop = _allPairsLength;\n        }\n        require(_stop >= _start, \"start cannot be higher than stop\");\n        uint256 _qty = _stop - _start;\n        address[3][] memory result = new address[3][](_qty);\n        for (uint256 i = 0; i < _qty; i++) {\n            IUniswapV2Pair _uniswapPair = IUniswapV2Pair(\n                _uniswapFactory.allPairs(_start + i)\n            );\n            result[i][0] = _uniswapPair.token0();\n            result[i][1] = _uniswapPair.token1();\n            result[i][2] = address(_uniswapPair);\n        }\n        return result;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
