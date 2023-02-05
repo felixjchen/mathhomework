@@ -12,6 +12,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func cloneD(D map[common.Address]OptimalPath) map[common.Address]OptimalPath {
+	clone := make(map[common.Address]OptimalPath)
+	for k, o := range D {
+		clone[k] = OptimalPath{
+			path:     o.path,
+			amountAt: o.amountAt,
+		}
+	}
+	return clone
+}
+
 func getV(allPairs []uniswap.Pair) []common.Address {
 	V := []common.Address{}
 
@@ -68,27 +79,21 @@ func ArbitragePornMain() {
 	pairToReserves := uniswap.GetReservesForPairs(allPairs)
 
 	D := make(map[common.Address]OptimalPath)
-	for _, v := range V {
-		D[v] = OptimalPath{
-			path:     []common.Address{},
-			amountAt: new(big.Int),
-		}
-	}
 	D[WETH] = OptimalPath{
 		path:     []common.Address{WETH},
 		amountAt: WETHIn,
 	}
 
 	for i := 0; i < MPL; i++ {
-		fmt.Println(i)
-		for x, optimalPathX := range D {
-			fmt.Println(optimalPathX)
+		oldD := cloneD(D)
+		for x, optimalPathX := range oldD {
 			for v, pairs := range E[x] {
 				for _, pair := range pairs {
 					amountAtV := uniswap.GetAmountOutToken(x, optimalPathX.amountAt, pair, pairToReserves[pair])
 
+					_, exists := D[v]
 					// no repeats and hop doesn't fail
-					if new(big.Int).Sub(amountAtV, D[v].amountAt).Sign() == 1 {
+					if !exists || new(big.Int).Sub(amountAtV, D[v].amountAt).Sign() == 1 {
 						D[v] = OptimalPath{
 							path:     append(optimalPathX.path, v),
 							amountAt: amountAtV,
@@ -98,5 +103,7 @@ func ArbitragePornMain() {
 			}
 		}
 	}
-	fmt.Println(D[WETH].path, WETHIn, D[WETH].amountAt)
+	fmt.Println("DONE")
+	fmt.Println(D[WETH].path)
+	fmt.Println(WETHIn, D[WETH].amountAt)
 }
